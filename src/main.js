@@ -10,11 +10,8 @@ let renderTimeout = null
 let gaussianCount
 let sceneMin, sceneMax
 
-const SORTING_ALGORITHMS = [
-    'count sort',
-    'quick sort',
-    'Array.sort'
-]
+let gizmoRenderer = new GizmoRenderer()
+let positionBuffer, positionData, opacityData
 
 const settings = {
     scene: 'room',
@@ -28,84 +25,35 @@ const settings = {
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',
-    uploadFile: () => document.querySelector('#input').click()
+    uploadFile: () => document.querySelector('#input').click(),
+
+    // Camera calibration
+    calibrateCamera: () => {},
+    finishCalibration: () => {},
+    showGizmo: true
 }
 
 const defaultCameraParameters = {
-    'building': {
-        up: [0, 0.968912, 0.247403],
-        target: [-0.262075, 0.76138, 1.27392],
-        camera: [ -1.1807959999999995, 1.8300000000000007, 3.99],
-        defaultCameraMode: 'orbit'
-    },
     'room': {
         up: [0, 0.886994, 0.461779],
         target: [-0.428322434425354, 1.2004123210906982, 0.8184626698493958],
         camera: [4.950796326794864, 1.7307963267948987, 2.5],
-        defaultCameraMode: 'freefly'
+        defaultCameraMode: 'freefly',
+        size: '270mb'
     },
-    // 'garden': {
-    //     up: [0.055540, 0.928368, 0.367486],
-    //     target: [0.338164, 1.198655, 0.455374],
-    //     defaultCameraMode: 'orbit'
-    // }
-}
-
-// Init settings GUI panel
-let maxGaussianController = null
-function initGUI() {
-    const gui = new lil.GUI()
-
-    gui.add(settings, 'scene', Object.keys(defaultCameraParameters)).name('Scene').listen()
-       .onChange((scene) => loadScene({ scene }))
-
-    gui.add(settings, 'renderResolution', 0.1, 1, 0.01).name('Preview Resolution')
-
-    maxGaussianController = gui.add(settings, 'maxGaussians', 1, settings.maxGaussians, 1).name('Max Gaussians')
-       .onChange(() => {
-            cam.needsWorkerUpdate = true
-            cam.updateWorker()
-        })
-
-    gui.add(settings, 'sortingAlgorithm', SORTING_ALGORITHMS).name('Sorting Algorithm')
-    gui.add(settings, 'sortTime').name('Sort Time').disable().listen()
-
-    gui.add(settings, 'scalingModifier', 0.01, 1, 0.01).name('Scaling Modifier')
-       .onChange(() => requestRender())
-
-    gui.addColor(settings, 'bgColor').name('Background Color')
-       .onChange(value => {
-        document.body.style.backgroundColor = value
-        requestRender()
-    })
-
-    gui.add(settings, 'speed', 0.01, 2, 0.01).name('Camera Speed')
-
-    gui.add(settings, 'fov', 30, 110, 1).name('FOV')
-       .onChange(value => {
-        cam.fov_y = value * Math.PI / 180
-        requestRender()
-    })
-
-    gui.add(settings, 'debugDepth').name('Show Depth Map')
-       .onChange(() => requestRender())
-
-    gui.add(settings, 'freeFly').name('Free Flying').listen()
-       .onChange(value => {
-            cam.freeFly = value
-            requestRender()
-        })
-
-    // File upload handler
-    gui.add(settings, 'uploadFile').name('Upload .ply file')
-    document.querySelector('#input').addEventListener('change', async e => {
-        try {
-            await loadScene({ file: e.target.files[0] })
-        } catch (error) {
-            document.querySelector('#loading-text').textContent = `An error occured when trying to read the file.`
-            throw error
-        }
-    })
+    'building': {
+        up: [0, 0.968912, 0.247403],
+        target: [-0.262075, 0.76138, 1.27392],
+        camera: [ -1.1807959999999995, 1.8300000000000007, 3.99],
+        defaultCameraMode: 'orbit',
+        size: '326mb'
+    },
+    'garden': {
+        up: [0.055540, 0.928368, 0.367486],
+        target: [0.338164, 1.198655, 0.455374],
+        defaultCameraMode: 'orbit',
+        size: '1.07gb [!]'
+    }
 }
 
 async function main() {
@@ -142,6 +90,11 @@ async function main() {
         updateBuffer(buffers.covA, data.cov3Da)
         updateBuffer(buffers.covB, data.cov3Db)
 
+        // Needed for the gizmo renderer
+        positionBuffer = buffers.center
+        positionData = data.positions
+        opacityData = data.opacities
+
         settings.sortTime = sortTime
 
         isWorkerSorting = false
@@ -150,6 +103,9 @@ async function main() {
 
     // Setup GUI
     initGUI()
+
+    // Setup gizmo renderer
+    await gizmoRenderer.init()
 
     // Load the default scene
     await loadScene({ scene: settings.scene })
@@ -166,6 +122,7 @@ async function loadScene({scene, file}) {
 
     // Create a StreamableReader from a URL Response object
     if (scene != null) {
+        scene = scene.split('(')[0].trim()
         const url = `https://huggingface.co/kishimisu/3d-gaussian-splatting-webgl/resolve/main/${scene}.ply`
         const response = await fetch(url)
         contentLength = parseInt(response.headers.get('content-length'))
@@ -252,11 +209,13 @@ function render(width, height, res) {
     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'viewmatrix'), false, cam.vm)
 
     // Custom parameters
-    gl.uniform3fv(gl.getUniformLocation(program, 'background_color'), hexToRGB(settings.bgColor))
     gl.uniform1i(gl.getUniformLocation(program, 'show_depth_map'), settings.debugDepth)
 
     // Draw
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, settings.maxGaussians)
+
+    // Draw gizmo
+    gizmoRenderer.render()
 
     renderFrameRequest = null
 
