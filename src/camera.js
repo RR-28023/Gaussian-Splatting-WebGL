@@ -1,7 +1,7 @@
 const { mat4, vec3, vec4 } = glMatrix
 
 class Camera {
-    constructor({target = [0, 0, 0], up = [0, 1, 0], camera = [], defaultCameraMode} = {}) {
+    constructor({target = [0, 0, 0], up = [0, 1, 0], camera = [], defaultCameraMode, min_phi = 1e-6, max_phi = Math.PI - 1e-6} = {}) {
         this.target = [...target] // Position of look-at target
         this.up = [...up]         // Up vector
 
@@ -9,6 +9,10 @@ class Camera {
         this.theta  = camera[0] ?? -Math.PI/2
         this.phi    = camera[1] ?? Math.PI/2
         this.radius = camera[2] ?? 3
+        
+        // Get phi bounds
+        this.min_phi = min_phi
+        this.max_phi = max_phi
 
         // Y Field of view
         this.fov_y = 0.820176
@@ -61,7 +65,11 @@ class Camera {
             if (!e.buttons || this.disableMovement) return
 
             this.theta -= e.movementX * 0.01 * .5
-            this.phi = Math.max(1e-6, Math.min(Math.PI - 1e-6, this.phi + e.movementY * 0.01 * .5))
+            this.phi = this.phi + e.movementY * 0.01 * .5
+            this.phi = Math.min(this.max_phi, this.phi)
+            this.phi = Math.max(this.min_phi, this.phi)
+            // Print phi and theta values to console, rounded to the third decimal
+            console.log(`phi: ${this.phi.toFixed(2)}, theta: ${this.theta.toFixed(2)}, up: [${this.up[0].toFixed(3)}, ${this.up[1].toFixed(3)}, ${this.up[2].toFixed(3)}]`);
             this.isDragging = true
 
             requestRender()
@@ -176,7 +184,7 @@ class Camera {
 
     update() {
         // Update current position
-        vec3.add(this.pos, this.target, this.getPos(this.freeFly ? 1 : this.radius))
+        vec3.add(this.pos, this.target, this.getPos(this.freeFly ? 4 : this.radius))
 
         // Create a lookAt view matrix
         mat4.lookAt(this.viewMatrix, this.pos, this.target, this.up)

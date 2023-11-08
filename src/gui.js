@@ -17,11 +17,10 @@ let camController = {
 function initGUI() {
     const gui = new lil.GUI({title: 'Settings'})
 
-    // Main settings
-    const sceneNames = Object.entries(defaultCameraParameters).map(([name, { size }]) => `${name} (${size})`)
+    const sceneNames = Object.entries(defaultCameraParameters).map(([name,]) => `${name}`)
     settings.scene = sceneNames[0]
     gui.add(settings, 'scene', sceneNames).name('Scene').listen()
-       .onChange((scene) => loadScene({ scene }))
+       .onChange((scene) => loadScene({ default_file: scene }))
 
     gui.add(settings, 'renderResolution', 0.1, 1, 0.01).name('Preview Resolution')
 

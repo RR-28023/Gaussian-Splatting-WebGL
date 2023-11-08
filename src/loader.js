@@ -107,15 +107,16 @@ async function loadPly(content) {
         const cov3D = computeCov3D(scale, 1, rotation)
         cov3Ds.push(...cov3D)
         // rotations.push(...rotation)
-        // scales.push(...scale)
+        scales.push(...scale)
 
         positions.push(...position)
     }
 
     console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
     
-    return { positions, opacities, colors, cov3Ds }
+    return { positions, opacities, colors, cov3Ds, scales}
 }
+
 
 // Converts scale and rotation properties of each
 // Gaussian to a 3D covariance matrix in world space.

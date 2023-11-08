@@ -14,8 +14,7 @@ let gizmoRenderer = new GizmoRenderer()
 let positionBuffer, positionData, opacityData
 
 const settings = {
-    scene: 'room',
-    renderResolution: 0.2,
+    renderResolution: 0.9,
     maxGaussians: 1e6,
     scalingModifier: 1,
     sortingAlgorithm: 'count sort',
@@ -31,29 +30,6 @@ const settings = {
     calibrateCamera: () => {},
     finishCalibration: () => {},
     showGizmo: true
-}
-
-const defaultCameraParameters = {
-    'room': {
-        up: [0, 0.886994, 0.461779],
-        target: [-0.428322434425354, 1.2004123210906982, 0.8184626698493958],
-        camera: [4.950796326794864, 1.7307963267948987, 2.5],
-        defaultCameraMode: 'freefly',
-        size: '270mb'
-    },
-    'building': {
-        up: [0, 0.968912, 0.247403],
-        target: [-0.262075, 0.76138, 1.27392],
-        camera: [ -1.1807959999999995, 1.8300000000000007, 3.99],
-        defaultCameraMode: 'orbit',
-        size: '326mb'
-    },
-    'garden': {
-        up: [0.055540, 0.928368, 0.367486],
-        target: [0.338164, 1.198655, 0.455374],
-        defaultCameraMode: 'orbit',
-        size: '1.07gb [!]'
-    }
 }
 
 async function main() {
@@ -108,20 +84,25 @@ async function main() {
     await gizmoRenderer.init()
 
     // Load the default scene
-    await loadScene({ scene: settings.scene })
+    await loadScene({ default_file: settings.scene })
 }
 
 // Load a .ply scene specified as a name (URL fetch) or local file
-async function loadScene({scene, file}) {
+async function loadScene({scene, file, default_file}) {
     gl.clearColor(0, 0, 0, 0)
     gl.clear(gl.COLOR_BUFFER_BIT)
     if (cam) cam.disableMovement = true
     document.querySelector('#loading-container').style.opacity = 1
 
     let reader, contentLength
-
+    if (default_file != null) {
+        const response = await fetch(`models/${default_file}.ply`)
+        contentLength = parseInt(response.headers.get('content-length'))
+        reader = response.body.getReader()
+        settings.scene = default_file
+    }
     // Create a StreamableReader from a URL Response object
-    if (scene != null) {
+    else if (scene != null) {
         scene = scene.split('(')[0].trim()
         const url = `https://huggingface.co/kishimisu/3d-gaussian-splatting-webgl/resolve/main/${scene}.ply`
         const response = await fetch(url)
@@ -143,19 +124,25 @@ async function loadScene({scene, file}) {
     // Load and pre-process gaussian data from .ply file
     const data = await loadPly(content.buffer)
 
+    // Print gravity center
+    getGravityCenter(data)
+    
+    // Remove scales from  (only needed for gravity center calculation)
+    data.scales = null
+
+
     // Send gaussian data to the worker
     worker.postMessage({ gaussians: {
         ...data, count: gaussianCount
     } })
 
     // Setup camera
-    const cameraParameters = scene ? defaultCameraParameters[scene] : {}
-    if (cam == null) cam = new Camera(cameraParameters)
-    else cam.setParameters(cameraParameters)
+    const cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
+    cam = new Camera(cameraParameters)
     cam.update()
 
     // Update GUI
-    settings.maxGaussians = Math.min(settings.maxGaussians, gaussianCount)
+    settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
 }
@@ -233,5 +220,22 @@ function render(width, height, res) {
         renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200)
     }
 }
+
+// Create function to calculate the gravity center
+function getGravityCenter(data) {
+    let sumX = 0, sumY = 0, sumZ = 0, sumScale = 0
+
+    for (let i = 0; i < data.positions.length; i+=3) {
+        let avg_scale = (data.scales[i] + data.scales[i + 1] + data.scales[i + 2]) / 3
+        sumX += data.positions[i]*avg_scale
+        sumY += data.positions[i + 1]*avg_scale
+        sumZ += data.positions[i + 2]*avg_scale
+        // Get t
+        sumScale += avg_scale
+    }
+    let mean_pos = [sumX / sumScale, sumY / sumScale, sumZ / sumScale]
+    console.log(`Gravity center at [${mean_pos[0].toFixed(3)},${mean_pos[1].toFixed(3)},${mean_pos[2].toFixed(3)}]`)
+}
+
 
 window.onload = main
