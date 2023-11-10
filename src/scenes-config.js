@@ -1,4 +1,28 @@
 const defaultCameraParameters = {
+    'yellow car pnts pruning + less blurry frames': {
+        up: [-0.082, 0.713, 0.696],
+        target:  [0.275,1.424,2.019], 
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [0.6, 1.96, 4], //[theta, phi, radius],
+        min_phi: 1.75
+    },
+    'red car images texture': {
+        up: [0.033, 0.837, 0.547],
+        target:  [0.301,1.870,0.750],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [11.42, 1.94, 4], //[theta, phi, radius],
+        min_phi: 1.90  // It also accepts max_phi
+    },
+    'blue car floaters pruning': {
+        up: [-0.014, 0.645, 0.764],
+        target:  [-0.262,1.820,2.290],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [9.54, 1.99, 4], //[theta, phi, radius],
+        min_phi: 1.88  // It also accepts max_phi
+    },
     'bag': {
         up: [-0.131503164768219,0.36319607496261597,0.9223857522010803],
         target: [0.1269, 1.74, 1.89], 
