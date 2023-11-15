@@ -48,9 +48,12 @@ async function loadPly(content) {
     const extractSplatData = (splatID) => {
         const position = fromDataView(splatID, 0, 3)
         // const n = fromDataView(splatID, 3, 6) // Not used
-        const harmonic = fromDataView(splatID, 6, 9)
         
+        // f(x)=3x**2 +6x+9
+        const H_last_idx = 9 + 6 * settings.shDegree  + 3 * (settings.shDegree ** 2)
+        const harmonic = fromDataView(splatID, 6, H_last_idx)
         const H_END = 6 + 48 // Offset of the last harmonic coefficient
+        
         const opacity = fromDataView(splatID, H_END)
         const scale = fromDataView(splatID, H_END + 1, H_END + 4)
         const rotation = fromDataView(splatID, H_END + 4, H_END + 8)
@@ -92,14 +95,19 @@ async function loadPly(content) {
         // Degree 1: 4 harmonics needed (12 floats) per gaussian
         // Degree 2: 9 harmonics needed (27 floats) per gaussian
         // Degree 3: 16 harmonics needed (48 floats) per gaussian
-        const SH_C0 = 0.28209479177387814
-        const color = [
-            0.5 + SH_C0 * harmonic[0],
-            0.5 + SH_C0 * harmonic[1],
-            0.5 + SH_C0 * harmonic[2]
-        ]
-        colors.push(...color)
-        // harmonics.push(...harmonic)
+        
+        if (settings.shDegree == 0) {
+            const SH_C0 = 0.28209479177387814
+            const color = [
+                0.5 + SH_C0 * harmonic[0],
+                0.5 + SH_C0 * harmonic[1],
+                0.5 + SH_C0 * harmonic[2]
+            ]
+            colors.push(...color)
+        }
+        else {
+            harmonics.push(...harmonic) 
+        }
 
         // (Webgl-specific) Pre-compute the 3D covariance matrix from
         // the rotation and scale in order to avoid recomputing it at each frame.
@@ -114,7 +122,7 @@ async function loadPly(content) {
 
     console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
     
-    return { positions, opacities, colors, cov3Ds, scales}
+    return { positions, opacities, colors, cov3Ds, scales, harmonics}
 }
 
 

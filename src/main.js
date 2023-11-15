@@ -24,6 +24,7 @@ const settings = {
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',
+    shDegree: 0,
     uploadFile: () => document.querySelector('#input').click(),
 
     // Camera calibration

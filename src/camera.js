@@ -167,6 +167,7 @@ class Camera {
     }
 
     getPos(radius = this.radius) {
+        // Position of the camera relative to the target in world coordinates
         const pos = [
             radius * Math.sin(this.phi) * Math.cos(this.theta),
             radius * Math.cos(this.phi),
@@ -177,6 +178,7 @@ class Camera {
     }
 
     getFront() {
+        // Dir vector from camera to target??
         const front = vec3.subtract(this.front, [0,0,0], this.getPos())
         vec3.normalize(front, front)
         return front
@@ -205,7 +207,11 @@ class Camera {
         // (Webgl-specific) Invert x-axis
         invertRow(this.vm, 0)
         invertRow(this.vpm, 0)
-
+        
+        // Get the inverse matrix of the view-projection matrix
+        // this.inverse = mat4.create()
+        // mat4.invert(this.inverse, this.vpm)
+        // this.pos = this.inverse[]
         this.updateWorker()
     }
 
@@ -227,7 +233,9 @@ class Camera {
             worker.postMessage({
                 viewMatrix:  this.vpm, 
                 maxGaussians: settings.maxGaussians,
-                sortingAlgorithm: settings.sortingAlgorithm
+                sortingAlgorithm: settings.sortingAlgorithm,
+                shDegree: settings.shDegree,
+                campos: this.pos
             })
         }
     }

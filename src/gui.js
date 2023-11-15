@@ -69,6 +69,10 @@ function initGUI() {
     otherFolder.add(settings, 'debugDepth').name('Show Depth Map')
        .onChange(() => requestRender())
 
+    // Add option to chose spherical harmonics degree to use, must be between 0 and 3
+    otherFolder.add(settings, 'shDegree', 0, 3, 1).name('SH Degree')
+       .onChange(() => loadScene({ default_file: settings.scene }))    
+
     // Camera calibration folder
     addCameraCalibrationFolder(gui)
 
