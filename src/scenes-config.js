@@ -1,52 +1,55 @@
 const defaultCameraParameters = {
-    // 'red_car_macro_noblur': {
-    //     up: [-0.049, 0.955, 0.293],
-    //     target:  [-1.016,0.725,0.726], 
+    'Hotwheel blue': {
+        up: [0.010, 0.620, 0.784],
+        target:  [0.373,1.331,1.886], 
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [3.12, 2.30, 9], //[theta, phi, radius],
+        min_phi: 1.85,
+        min_radius: 4.5
+    }, 
+    'Hotwheel red': {
+        up: [-0.058, 0.954, 0.294],
+        target:  [-0.231,0.991,0.844], 
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [4.37, 1.98, 7], //[theta, phi, radius],
+        min_phi: 1.8,
+        max_phi: 2.5,
+        min_radius: 3.7 
+    }, 
+    // 'blue_car_800imgs_90k': {
+    //     up: [0.010, 0.620, 0.784],
+    //     target:  [0.373,1.331,1.886], 
     //     defaultCameraMode: 'orbit',
     //     size: '?',
-    //     camera: [-1.95, 1.76, 4], //[theta, phi, radius],
+    //     camera: [3.12, 2.30, 12], //[theta, phi, radius],
+    //     min_phi: 1.9
+    // }, 
+    // 'red_car_600imgs_90k': {
+    //     up: [0.055, 0.946, 0.319],
+    //     target:  [-0.231,0.991,0.844], 
+    //     defaultCameraMode: 'orbit',
+    //     size: '?',
+    //     camera: [4.37, 1.98, 4], //[theta, phi, radius],
+    //     min_phi: 1.5
+    // }, 
+    // 'red_car': {
+    //     up: [-0.080, 0.886, 0.458],
+    //     target:  [0.215,1.786,0.964], 
+    //     defaultCameraMode: 'orbit',
+    //     size: '?',
+    //     camera: [-2.75, 1.80, 4], //[theta, phi, radius],
     //     min_phi: 1.75
     // },
-    'red_car_macro': {
-        up: [0.055, 0.946, 0.319],
-        target:  [0.726,0.520,1.254], 
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [-3.95, 1.84, 4], //[theta, phi, radius],
-        min_phi: 1.75
-    },
-    'blue_car_macro': {
-        up: [-0.231, -0.098, 0.96],
-        target:  [2.843,0.190,16.807], 
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [2.64, 2.67, 12], //[theta, phi, radius],
-        min_phi: 1.75
-    },
-    'yellow_car': {
-        up: [-0.082, 0.713, 0.696],
-        target:  [0.275,1.424,2.019], 
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [0.6, 1.96, 4], //[theta, phi, radius],
-        min_phi: 1.75
-    },
-    'red_car': {
-        up: [-0.080, 0.886, 0.458],
-        target:  [0.215,1.786,0.964], 
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [-2.75, 1.80, 4], //[theta, phi, radius],
-        min_phi: 1.75
-    },
-    'blue_car': {
-        up: [-0.014, 0.645, 0.764],
-        target:  [-0.262,1.820,2.290],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [9.54, 1.99, 4], //[theta, phi, radius],
-        min_phi: 1.88  // It also accepts max_phi
-    },
+    // 'blue_car': {
+    //     up: [-0.014, 0.645, 0.764],
+    //     target:  [-0.262,1.820,2.290],
+    //     defaultCameraMode: 'orbit',
+    //     size: '?',
+    //     camera: [9.54, 1.99, 4], //[theta, phi, radius],
+    //     min_phi: 1.88  // It also accepts max_phi
+    // },
     // 'bag': {
     //     up: [-0.131503164768219,0.36319607496261597,0.9223857522010803],
     //     target: [0.1269, 1.74, 1.89], 

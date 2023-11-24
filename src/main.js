@@ -20,7 +20,7 @@ const settings = {
     sortingAlgorithm: 'count sort',
     bgColor: '#000000',
     speed: 0.07,
-    fov: 47,
+    fov: 35.58,
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',

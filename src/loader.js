@@ -27,12 +27,12 @@ async function loadPly(content) {
     sceneMin = new Array(3).fill(Infinity)
     sceneMax = new Array(3).fill(-Infinity)
 
+    // Create a dataview to access the buffer's content on a byte level
+    const view = new DataView(content)
+    
     // Helpers
     const sigmoid = (m1) => 1 / (1 + Math.exp(-m1))
-    const NUM_PROPS = 62
-
-    // Create a dataview to access the buffer's content on a byte levele
-    const view = new DataView(content)
+    const NUM_PROPS = (- headerEnd + view.byteLength) / gaussianCount / 4 // If the gaussian has been trained with a lower SH degree, this number will be lower
 
     // Get a slice of the dataview relative to a splat index
     const fromDataView = (splatID, start, end) => {
@@ -52,7 +52,7 @@ async function loadPly(content) {
         // f(x)=3x**2 +6x+9
         const H_last_idx = 9 + 6 * settings.shDegree  + 3 * (settings.shDegree ** 2)
         const harmonic = fromDataView(splatID, 6, H_last_idx)
-        const H_END = 6 + 48 // Offset of the last harmonic coefficient
+        const H_END = 6 + NUM_PROPS - 14 // 48 // Offset of the last harmonic coefficient
         
         const opacity = fromDataView(splatID, H_END)
         const scale = fromDataView(splatID, H_END + 1, H_END + 4)
