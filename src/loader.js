@@ -10,6 +10,16 @@ async function loadPly(content) {
     // Get number of gaussians
     const regex = /element vertex (\d+)/
     const match = header.match(regex)
+
+    // Get number of SH coefficients (the model may have been trained with a lower SH degree)
+    const regex_sh = /f_rest_(\d+)/g
+    const match_sh = header.match(regex_sh)
+    if (match_sh == null) {
+        n_sh = 3
+    }
+    else {
+        n_sh = 3 + match_sh.length
+    }
     gaussianCount = parseInt(match[1])
 
     document.querySelector('#loading-text').textContent = `Success. Initializing ${gaussianCount} gaussians...`
@@ -49,11 +59,20 @@ async function loadPly(content) {
         const position = fromDataView(splatID, 0, 3)
         // const n = fromDataView(splatID, 3, 6) // Not used
         
-        // f(x)=3x**2 +6x+9
-        const H_last_idx = 9 + 6 * settings.shDegree  + 3 * (settings.shDegree ** 2)
-        const harmonic = fromDataView(splatID, 6, H_last_idx)
+        // f(x)=3x**2 +6x+
+        const H_last_idx = 6 + n_sh
+        const harmonic_raw = fromDataView(splatID, 6, H_last_idx)
         const H_END = 6 + NUM_PROPS - 14 // 48 // Offset of the last harmonic coefficient
         
+        // Need to re-order harmonic_raw[3:] (see the original paper's python implementation of GaussianModel.load_ply)
+        const n_extra_features = 2 * settings.shDegree  + (settings.shDegree ** 2)
+        const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]]
+        for (let i = 0; i < n_extra_features; i++) {
+            harmonic.push(harmonic_raw[3 + i])
+            harmonic.push(harmonic_raw[3 + i + 15])
+            harmonic.push(harmonic_raw[3 + i + 15 * 2])
+        }
+
         const opacity = fromDataView(splatID, H_END)
         const scale = fromDataView(splatID, H_END + 1, H_END + 4)
         const rotation = fromDataView(splatID, H_END + 4, H_END + 8)

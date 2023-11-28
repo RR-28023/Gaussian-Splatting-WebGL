@@ -1,12 +1,11 @@
 const defaultCameraParameters = {
-    'Hotwheel blue': {
+    'blue_car_800imgs_90k': {
         up: [0.010, 0.620, 0.784],
         target:  [0.373,1.331,1.886], 
         defaultCameraMode: 'orbit',
         size: '?',
-        camera: [3.12, 2.30, 9], //[theta, phi, radius],
-        min_phi: 1.85,
-        min_radius: 4.5
+        camera: [3.12, 2.30, 12], //[theta, phi, radius],
+        min_phi: 1.9
     }, 
     'Hotwheel red': {
         up: [-0.058, 0.954, 0.294],
@@ -18,14 +17,25 @@ const defaultCameraParameters = {
         max_phi: 2.5,
         min_radius: 3.7 
     }, 
-    // 'blue_car_800imgs_90k': {
-    //     up: [0.010, 0.620, 0.784],
-    //     target:  [0.373,1.331,1.886], 
-    //     defaultCameraMode: 'orbit',
-    //     size: '?',
-    //     camera: [3.12, 2.30, 12], //[theta, phi, radius],
-    //     min_phi: 1.9
-    // }, 
+    'Hotwheel blue': {
+        up: [0.010, 0.620, 0.784],
+        target:  [0.373,1.331,1.886], 
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [3.12, 2.30, 9], //[theta, phi, radius],
+        min_phi: 1.85,
+        min_radius: 4.5
+    },
+    'xsara carlos sainz': {
+        up: [0.095, 0.862, 0.498],
+        target:  [-0.642, 1.176, 1.681], 
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [4.1, 2.0, 7], //[theta, phi, radius],
+        min_phi: 1.9,
+        max_phi: 3.0,
+        min_radius: 4 
+    },  
     // 'red_car_600imgs_90k': {
     //     up: [0.055, 0.946, 0.319],
     //     target:  [-0.231,0.991,0.844], 
