@@ -29,14 +29,13 @@ onmessage = function(event) {
         // Sort the gaussians!
         sortGaussiansByDepth(depthIndex, gaussians, viewMatrix, sortingAlgorithm)
 
-        shDegree = event.data.shDegree
+        n_sh_coeffs = event.data.n_sh_coeffs
         // Update arrays containing the data
         for (let j = 0; j < gaussians.count; j++) {
             const i = depthIndex[j]
-            if (shDegree > 0) {
-                max_sh_coeffs = 3 + 6*shDegree + 3*shDegree**2
+            if (n_sh_coeffs > 3) {                
                 campos = { x: event.data.campos[0], y: event.data.campos[1], z: event.data.campos[2]}
-                colors = computeColorFromSH(i, shDegree, max_sh_coeffs, gaussians.positions, campos, gaussians.harmonics)
+                colors = computeColorFromSH(i, n_sh_coeffs, gaussians.positions, campos, gaussians.harmonics)
             }
             else {
                 colors = { x: gaussians.colors[i*3], y: gaussians.colors[i*3+1], z: gaussians.colors[i*3+2] }
@@ -151,7 +150,7 @@ function partition(A, B, lo, hi) {
     }    
 }
 
-function computeColorFromSH(idx, deg, max_coeffs, means, campos, shs) {
+function computeColorFromSH(idx, n_sh_coeffs, means, campos, shs) {
     // Assuming means, campos, and shs are arrays of {x, y, z}
     // Vector subtraction to get direction
     SH_C0 = 0.28209479177387814
@@ -180,17 +179,17 @@ function computeColorFromSH(idx, deg, max_coeffs, means, campos, shs) {
 
     // Accessing spherical harmonics coefficients
     let sh = [];
-    for (let i = 0; i < max_coeffs / 3 ; i++) {
-        sh.push([shs[idx*max_coeffs + i*3],
-                shs[idx*max_coeffs + i*3 + 1],
-                shs[idx*max_coeffs + i*3 + 2]
+    for (let i = 0; i < n_sh_coeffs / 3 ; i++) {
+        sh.push([shs[idx*n_sh_coeffs + i*3],
+                shs[idx*n_sh_coeffs + i*3 + 1],
+                shs[idx*n_sh_coeffs + i*3 + 2]
         ]);
     }
     result = sh[0].map(el => el * SH_C0);
 
     // Further calculations based on the degree of spherical harmonics
     
-    if (deg > 0) {
+    if (n_sh_coeffs > 3) { // degree > 0
         let x = dir.x;
         let y = dir.y;
         let z = dir.z;
@@ -202,7 +201,7 @@ function computeColorFromSH(idx, deg, max_coeffs, means, campos, shs) {
             - sh[3].map(el => el * SH_C1 * x)[i]
         )
 
-        if (deg > 1) {
+        if (n_sh_coeffs > 12) { // degree > 1
             xx = x * x, yy = y * y, zz = z * z
             xy = x * y, yz = y * z, xz = x * z
             result = result.map((el, i) => 
@@ -213,7 +212,7 @@ function computeColorFromSH(idx, deg, max_coeffs, means, campos, shs) {
                 + SH_C2[3] * xz * sh[7][i]
                 + SH_C2[4] * (xx - yy) * sh[8][i]
             )
-            if (deg > 2) {
+            if (n_sh_coeffs > 27) { // degree > 2
                 result = result.map((el, i) =>
                     el 
                     + SH_C3[0] * y * (3.0 * xx - yy) * sh[9][i]

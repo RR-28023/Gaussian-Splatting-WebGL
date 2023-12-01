@@ -42,7 +42,7 @@ async function loadPly(content) {
     
     // Helpers
     const sigmoid = (m1) => 1 / (1 + Math.exp(-m1))
-    const NUM_PROPS = (- headerEnd + view.byteLength) / gaussianCount / 4 // If the gaussian has been trained with a lower SH degree, this number will be lower
+    const NUM_PROPS = 14 + n_sh // If the gaussian has been trained with a lower SH degree, this number will be lower
 
     // Get a slice of the dataview relative to a splat index
     const fromDataView = (splatID, start, end) => {
@@ -65,7 +65,7 @@ async function loadPly(content) {
         const H_END = 6 + NUM_PROPS - 14 // 48 // Offset of the last harmonic coefficient
         
         // Need to re-order harmonic_raw[3:] (see the original paper's python implementation of GaussianModel.load_ply)
-        const n_extra_features = 2 * settings.shDegree  + (settings.shDegree ** 2)
+        const n_extra_features = (n_sh - 3) / 3
         const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]]
         for (let i = 0; i < n_extra_features; i++) {
             harmonic.push(harmonic_raw[3 + i])
@@ -115,7 +115,7 @@ async function loadPly(content) {
         // Degree 2: 9 harmonics needed (27 floats) per gaussian
         // Degree 3: 16 harmonics needed (48 floats) per gaussian
         
-        if (settings.shDegree == 0) {
+        if (n_sh == 3) {
             const SH_C0 = 0.28209479177387814
             const color = [
                 0.5 + SH_C0 * harmonic[0],

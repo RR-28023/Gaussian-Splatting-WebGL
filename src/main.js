@@ -24,7 +24,8 @@ const settings = {
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',
-    shDegree: 0,
+    // shDegree: 2,
+    // maxShDegree: 3,
     uploadFile: () => document.querySelector('#input').click(),
 
     // Camera calibration

@@ -253,7 +253,7 @@ class Camera {
                 viewMatrix:  this.vpm, 
                 maxGaussians: settings.maxGaussians,
                 sortingAlgorithm: settings.sortingAlgorithm,
-                shDegree: settings.shDegree,
+                n_sh_coeffs: n_sh,
                 campos: this.pos
             })
         }
