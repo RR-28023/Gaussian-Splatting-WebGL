@@ -10,6 +10,16 @@ async function loadPly(content) {
     // Get number of gaussians
     const regex = /element vertex (\d+)/
     const match = header.match(regex)
+
+    // Get number of SH coefficients (the model may have been trained with a lower SH degree)
+    const regex_sh = /f_rest_(\d+)/g
+    const match_sh = header.match(regex_sh)
+    if (match_sh == null) {
+        n_sh = 3
+    }
+    else {
+        n_sh = 3 + match_sh.length
+    }
     gaussianCount = parseInt(match[1])
 
     document.querySelector('#loading-text').textContent = `Success. Initializing ${gaussianCount} gaussians...`
@@ -27,12 +37,12 @@ async function loadPly(content) {
     sceneMin = new Array(3).fill(Infinity)
     sceneMax = new Array(3).fill(-Infinity)
 
+    // Create a dataview to access the buffer's content on a byte level
+    const view = new DataView(content)
+    
     // Helpers
     const sigmoid = (m1) => 1 / (1 + Math.exp(-m1))
-    const NUM_PROPS = 62
-
-    // Create a dataview to access the buffer's content on a byte levele
-    const view = new DataView(content)
+    const NUM_PROPS = 14 + n_sh // If the gaussian has been trained with a lower SH degree, this number will be lower
 
     // Get a slice of the dataview relative to a splat index
     const fromDataView = (splatID, start, end) => {
@@ -48,9 +58,21 @@ async function loadPly(content) {
     const extractSplatData = (splatID) => {
         const position = fromDataView(splatID, 0, 3)
         // const n = fromDataView(splatID, 3, 6) // Not used
-        const harmonic = fromDataView(splatID, 6, 9)
         
-        const H_END = 6 + 48 // Offset of the last harmonic coefficient
+        // f(x)=3x**2 +6x+
+        const H_last_idx = 6 + n_sh
+        const harmonic_raw = fromDataView(splatID, 6, H_last_idx)
+        const H_END = 6 + NUM_PROPS - 14 // 48 // Offset of the last harmonic coefficient
+        
+        // Need to re-order harmonic_raw[3:] (see the original paper's python implementation of GaussianModel.load_ply)
+        const n_extra_features = (n_sh - 3) / 3
+        const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]]
+        for (let i = 0; i < n_extra_features; i++) {
+            harmonic.push(harmonic_raw[3 + i])
+            harmonic.push(harmonic_raw[3 + i + n_extra_features])
+            harmonic.push(harmonic_raw[3 + i + n_extra_features * 2])
+        }
+
         const opacity = fromDataView(splatID, H_END)
         const scale = fromDataView(splatID, H_END + 1, H_END + 4)
         const rotation = fromDataView(splatID, H_END + 4, H_END + 8)
@@ -92,14 +114,19 @@ async function loadPly(content) {
         // Degree 1: 4 harmonics needed (12 floats) per gaussian
         // Degree 2: 9 harmonics needed (27 floats) per gaussian
         // Degree 3: 16 harmonics needed (48 floats) per gaussian
-        const SH_C0 = 0.28209479177387814
-        const color = [
-            0.5 + SH_C0 * harmonic[0],
-            0.5 + SH_C0 * harmonic[1],
-            0.5 + SH_C0 * harmonic[2]
-        ]
-        colors.push(...color)
-        // harmonics.push(...harmonic)
+        
+        if (n_sh == 3) {
+            const SH_C0 = 0.28209479177387814
+            const color = [
+                0.5 + SH_C0 * harmonic[0],
+                0.5 + SH_C0 * harmonic[1],
+                0.5 + SH_C0 * harmonic[2]
+            ]
+            colors.push(...color)
+        }
+        else {
+            harmonics.push(...harmonic) 
+        }
 
         // (Webgl-specific) Pre-compute the 3D covariance matrix from
         // the rotation and scale in order to avoid recomputing it at each frame.
@@ -114,7 +141,7 @@ async function loadPly(content) {
 
     console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
     
-    return { positions, opacities, colors, cov3Ds, scales}
+    return { positions, opacities, colors, cov3Ds, scales, harmonics}
 }
 
 

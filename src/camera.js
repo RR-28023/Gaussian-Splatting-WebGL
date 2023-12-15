@@ -1,7 +1,7 @@
 const { mat4, vec3, vec4 } = glMatrix
 
 class Camera {
-    constructor({target = [0, 0, 0], up = [0, 1, 0], camera = [], defaultCameraMode, min_phi = 1e-6, max_phi = Math.PI - 1e-6} = {}) {
+    constructor({target = [0, 0, 0], up = [0, 1, 0], camera = [], defaultCameraMode, min_phi = 1e-6, max_phi = Math.PI - 1e-6, min_radius = 1} = {}) {
         this.target = [...target] // Position of look-at target
         this.up = [...up]         // Up vector
 
@@ -10,12 +10,13 @@ class Camera {
         this.phi    = camera[1] ?? Math.PI/2
         this.radius = camera[2] ?? 3
         
-        // Get phi bounds
+        // Get bounds
         this.min_phi = min_phi
         this.max_phi = max_phi
+        this.min_radius = min_radius
 
         // Y Field of view
-        this.fov_y = 0.820176
+        this.fov_y = settings.fov * Math.PI / 180 
 
         // False: orbit around object (mouse + wheel)
         // True: free-fly (mouse + AWSD)
@@ -104,7 +105,7 @@ class Camera {
         gl.canvas.addEventListener('wheel', e => {
             if (this.freeFly || this.disableMovement) return
 
-            this.radius = Math.max(1, this.radius + e.deltaY * 0.01)
+            this.radius = Math.max(this.min_radius, this.radius + e.deltaY * 0.01)
 
             requestRender()
         })
@@ -167,6 +168,7 @@ class Camera {
     }
 
     getPos(radius = this.radius) {
+        // Position of the camera relative to the target in world coordinates
         const pos = [
             radius * Math.sin(this.phi) * Math.cos(this.theta),
             radius * Math.cos(this.phi),
@@ -177,6 +179,7 @@ class Camera {
     }
 
     getFront() {
+        // Dir vector from camera to target??
         const front = vec3.subtract(this.front, [0,0,0], this.getPos())
         vec3.normalize(front, front)
         return front
@@ -184,28 +187,50 @@ class Camera {
 
     update() {
         // Update current position
-        vec3.add(this.pos, this.target, this.getPos(this.freeFly ? 4 : this.radius))
+        vec3.add(this.pos, this.target, this.getPos(this.radius))
+        //hardcode float32 array
+        
+        // this.up = new Float32Array([0, 0, 1])
 
         // Create a lookAt view matrix
         mat4.lookAt(this.viewMatrix, this.pos, this.target, this.up)
-
+        
         // Create a perspective projection matrix
         const aspect = gl.canvas.width / gl.canvas.height
-        mat4.perspective(this.projMatrix, this.fov_y, aspect, 0.1, 100)
-
+        // const aspect = 1.95
+        mat4.perspective(this.projMatrix, this.fov_y, aspect, 0.01, 100)
+        
+        // Ultimately these two is what matters
+        // this.viewMatrix = new Float32Array([0.4651901125907898, -0.1416754275560379, -0.8737998604774475, 0, -0.6972103714942932, 0.5495774745941162, -0.4602850079536438, 0, 0.5454317927360535, 0.8233423829078674, 0.15688040852546692, 0, -0.2742132842540741, -2.231466293334961, -3.847353935241699, 1])
+        
 		// Convert view and projection to target coordinate system
         // Original C++ reference: https://gitlab.inria.fr/sibr/sibr_core/-/blob/gaussian_code_release_union/src/projects/gaussianviewer/renderer/GaussianView.cpp#L464
+        
+        // Transformar de valores de Cameras en gaussians a lo que se usa aquí
+        // this.viewMatrix = new Float32Array([-0.4256, -0.2153,  0.8789,  0.0000,  0.7157,  0.5143,  0.4725,  0.0000, -0.5538,  0.8301, -0.0648,  0.0000,  0.4500, -2.5364,  3.6361,  1.0000])
+        // for (let i = 0; i < this.viewMatrix.length; i += 2) {
+        //     this.viewMatrix[i] *= -1;
+        // }
+        // this.projMatrix = new Float32Array([ 1.4362,  0.0000,  0.0000,  0.0000,  0.0000,  3.1157,  0.0000,  0.0000, 0.0000,  0.0000,  1.0001,  1.0000,  0.0000,  0.0000, -0.0100,  0.0000])
+        // for (let i = 8; i < 12; i += 1) {
+        //     this.projMatrix[i] *= -1;
+        // }
+        // this.pos = new Float32Array([-3.5504, -0.7357,  2.5904]) 
         mat4.copy(this.vm, this.viewMatrix)
         mat4.multiply(this.vpm, this.projMatrix, this.viewMatrix)
-
+        
         invertRow(this.vm, 1)
         invertRow(this.vm, 2)
         invertRow(this.vpm, 1)
-
+                
         // (Webgl-specific) Invert x-axis
         invertRow(this.vm, 0)
         invertRow(this.vpm, 0)
-
+        
+        // Get the inverse matrix of the view-projection matrix
+        // this.inverse = mat4.create()
+        // mat4.invert(this.inverse, this.vpm)
+        // this.pos = this.inverse[]
         this.updateWorker()
     }
 
@@ -227,7 +252,9 @@ class Camera {
             worker.postMessage({
                 viewMatrix:  this.vpm, 
                 maxGaussians: settings.maxGaussians,
-                sortingAlgorithm: settings.sortingAlgorithm
+                sortingAlgorithm: settings.sortingAlgorithm,
+                n_sh_coeffs: n_sh,
+                campos: this.pos
             })
         }
     }

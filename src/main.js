@@ -20,10 +20,12 @@ const settings = {
     sortingAlgorithm: 'count sort',
     bgColor: '#000000',
     speed: 0.07,
-    fov: 47,
+    fov: 35.58,
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',
+    // shDegree: 2,
+    // maxShDegree: 3,
     uploadFile: () => document.querySelector('#input').click(),
 
     // Camera calibration
