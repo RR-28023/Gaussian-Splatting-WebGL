@@ -69,8 +69,8 @@ async function loadPly(content) {
         const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]]
         for (let i = 0; i < n_extra_features; i++) {
             harmonic.push(harmonic_raw[3 + i])
-            harmonic.push(harmonic_raw[3 + i + 15])
-            harmonic.push(harmonic_raw[3 + i + 15 * 2])
+            harmonic.push(harmonic_raw[3 + i + n_extra_features])
+            harmonic.push(harmonic_raw[3 + i + n_extra_features * 2])
         }
 
         const opacity = fromDataView(splatID, H_END)
