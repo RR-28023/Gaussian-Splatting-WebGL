@@ -12,7 +12,9 @@ let sceneMin, sceneMax
 
 let gizmoRenderer = new GizmoRenderer()
 let positionBuffer, positionData, opacityData
-
+let dynamic_frame = 0;
+let data = []
+let stopInterval;
 const settings = {
     renderResolution: 0.9,
     maxGaussians: 1e6,
@@ -29,8 +31,8 @@ const settings = {
     uploadFile: () => document.querySelector('#input').click(),
 
     // Camera calibration
-    calibrateCamera: () => {},
-    finishCalibration: () => {},
+    calibrateCamera: () => { },
+    finishCalibration: () => { },
     showGizmo: true
 }
 
@@ -90,70 +92,106 @@ async function main() {
 }
 
 // Load a .ply scene specified as a name (URL fetch) or local file
-async function loadScene({scene, file, default_file}) {
-    gl.clearColor(0, 0, 0, 0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    if (cam) cam.disableMovement = true
-    document.querySelector('#loading-container').style.opacity = 1
+async function loadScene({ scene, file, default_file }) {
+    if (!default_file.includes('dynamic')) {dynamic_frame = 0}
+    if (dynamic_frame == 0) {
+        if (stopInterval){
+            clearInterval(stopInterval);
+            stopInterval = null;
+        } 
+        data = []
+        gl.clearColor(0, 0, 0, 0)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        if (cam) cam.disableMovement = true
+        if (!default_file.includes('dynamic')) document.querySelector('#loading-container').style.opacity = 1
 
-    let reader, contentLength
-    if (default_file != null) {
-        const response = await fetch(`models/${default_file}.ply`)
-        contentLength = parseInt(response.headers.get('content-length'))
-        reader = response.body.getReader()
-        settings.scene = default_file
+        let reader = []
+        let contentLength =[]
+        if (default_file != null) {
+            let response;
+            // settings.scene = default_file
+            if (default_file.includes('dynamic')) {
+                for (let i = 0; i < 15; i++) {
+                    default_file = 'dynamic/test_' + i.toString()
+                    response = await fetch(`models/${default_file}.ply`)
+                    contentLength.push(parseInt(response.headers.get('content-length')))
+                    reader.push(response.body.getReader())
+                }
+
+            }
+            else {
+                response = await fetch(`models/${default_file}.ply`)
+                contentLength = [parseInt(response.headers.get('content-length'))]
+                reader = [response.body.getReader()]
+            }
+            
+        }
+        // Create a StreamableReader from a URL Response object
+        else if (scene != null) {
+            scene = scene.split('(')[0].trim()
+            const url = `https://huggingface.co/kishimisu/3d-gaussian-splatting-webgl/resolve/main/${scene}.ply`
+            const response = await fetch(url)
+            contentLength = [parseInt(response.headers.get('content-length'))]
+            reader = [response.body.getReader()]
+        }
+        // Create a StreamableReader from a File object
+        else if (file != null) {
+            contentLength = [file.size]
+            reader = [file.stream().getReader()]
+            settings.scene = 'custom'
+        }
+        else
+            throw new Error('No scene or file specified')
+        for (let i = 0; i < reader.length; i++) {
+            // Download .ply file and monitor the progress
+            const content = await downloadPly(reader[i], contentLength[i])
+            // Load and pre-process gaussian data from .ply file
+            data.push(await loadPly(content.buffer))
+        }
+        
+        // Print gravity center
+        getGravityCenter(data[0])
+        
+        // Remove scales from  (only needed for gravity center calculation)
+        for (let data_value of data) {
+            data_value.scales = null;
+        }
     }
-    // Create a StreamableReader from a URL Response object
-    else if (scene != null) {
-        scene = scene.split('(')[0].trim()
-        const url = `https://huggingface.co/kishimisu/3d-gaussian-splatting-webgl/resolve/main/${scene}.ply`
-        const response = await fetch(url)
-        contentLength = parseInt(response.headers.get('content-length'))
-        reader = response.body.getReader()
-    }
-    // Create a StreamableReader from a File object
-    else if (file != null) {
-        contentLength = file.size
-        reader = file.stream().getReader()
-        settings.scene = 'custom'
-    }
-    else
-        throw new Error('No scene or file specified')
-
-    // Download .ply file and monitor the progress
-    const content = await downloadPly(reader, contentLength)
-
-    // Load and pre-process gaussian data from .ply file
-    const data = await loadPly(content.buffer)
-
-    // Print gravity center
-    getGravityCenter(data)
-    
-    // Remove scales from  (only needed for gravity center calculation)
-    data.scales = null
-
-
     // Send gaussian data to the worker
-    worker.postMessage({ gaussians: {
-        ...data, count: gaussianCount
-    } })
+    worker.postMessage({
+        gaussians: {
+            ...data[dynamic_frame], count: gaussianCount
+        }
+    })
+
 
     // Setup camera
-    const cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
-    cam = new Camera(cameraParameters)
+    let cameraParameters = {}
+    if (default_file.includes('dynamic')) {
+        cameraParameters = defaultCameraParameters['dynamic']
+        dynamic_frame = (dynamic_frame <13) ? dynamic_frame+1:0
+    }
+    else {
+        cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
+    }
+    cam = (default_file== 'dynamic' && dynamic_frame!=1) ? cam:new Camera(cameraParameters)
+    cam.disableMovement = false
     cam.update()
 
     // Update GUI
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
+    if (default_file.includes('dynamic') && dynamic_frame == 1  && !stopInterval) {
+            stopInterval = setInterval(() => loadScene({default_file:settings.scene}), 1000);
+        }
 }
 
 function requestRender(...params) {
-    if (renderFrameRequest != null) 
+    if (renderFrameRequest != null)
         cancelAnimationFrame(renderFrameRequest)
 
-    renderFrameRequest = requestAnimationFrame(() => render(...params)) 
+    renderFrameRequest = requestAnimationFrame(() => render(...params))
 }
 
 // Render a frame on the canvas
@@ -216,7 +254,7 @@ function render(width, height, res) {
         const nextWidth = Math.round(canvasSize[0] * nextResolution)
         const nextHeight = Math.round(canvasSize[1] * nextResolution)
 
-        if (renderTimeout != null) 
+        if (renderTimeout != null)
             clearTimeout(renderTimeout)
 
         renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200)
@@ -227,11 +265,11 @@ function render(width, height, res) {
 function getGravityCenter(data) {
     let sumX = 0, sumY = 0, sumZ = 0, sumScale = 0
 
-    for (let i = 0; i < data.positions.length; i+=3) {
+    for (let i = 0; i < data.positions.length; i += 3) {
         let avg_scale = (data.scales[i] + data.scales[i + 1] + data.scales[i + 2]) / 3
-        sumX += data.positions[i]*avg_scale
-        sumY += data.positions[i + 1]*avg_scale
-        sumZ += data.positions[i + 2]*avg_scale
+        sumX += data.positions[i] * avg_scale
+        sumY += data.positions[i + 1] * avg_scale
+        sumZ += data.positions[i + 2] * avg_scale
         // Get t
         sumScale += avg_scale
     }
