@@ -12,7 +12,7 @@ let sceneMin, sceneMax
 
 let gizmoRenderer = new GizmoRenderer()
 let positionBuffer, positionData, opacityData
-let dynamic_frame = 0;
+let dynamic_frame = -1;
 let data = []
 let stopInterval;
 const settings = {
@@ -93,8 +93,10 @@ async function main() {
 
 // Load a .ply scene specified as a name (URL fetch) or local file
 async function loadScene({ scene, file, default_file }) {
-    if (!default_file.includes('dynamic')) {dynamic_frame = 0}
-    if (dynamic_frame == 0) {
+    let reset_camera = false;
+    if (!default_file.includes('dynamic')) {dynamic_frame = -1}
+    if (dynamic_frame == -1) {
+        reset_camera = true
         if (stopInterval){
             clearInterval(stopInterval);
             stopInterval = null;
@@ -103,7 +105,7 @@ async function loadScene({ scene, file, default_file }) {
         gl.clearColor(0, 0, 0, 0)
         gl.clear(gl.COLOR_BUFFER_BIT)
         if (cam) cam.disableMovement = true
-        if (!default_file.includes('dynamic')) document.querySelector('#loading-container').style.opacity = 1
+        document.querySelector('#loading-container').style.opacity = 1
 
         let reader = []
         let contentLength =[]
@@ -111,6 +113,7 @@ async function loadScene({ scene, file, default_file }) {
             let response;
             // settings.scene = default_file
             if (default_file.includes('dynamic')) {
+                dynamic_frame = 0
                 for (let i = 0; i < 15; i++) {
                     default_file = 'dynamic/test_' + i.toString()
                     response = await fetch(`models/${default_file}.ply`)
@@ -160,7 +163,7 @@ async function loadScene({ scene, file, default_file }) {
     // Send gaussian data to the worker
     worker.postMessage({
         gaussians: {
-            ...data[dynamic_frame], count: gaussianCount
+            ...data[Math.max(0, dynamic_frame)], count: gaussianCount
         }
     })
 
@@ -174,16 +177,16 @@ async function loadScene({ scene, file, default_file }) {
     else {
         cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
     }
-    cam = (default_file== 'dynamic' && dynamic_frame!=1) ? cam:new Camera(cameraParameters)
+    cam = reset_camera ? new Camera(cameraParameters) : cam
     cam.disableMovement = false
-    cam.update()
+    dynamic_frame > 1 ? cam.update(true):cam.update()
 
     // Update GUI
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
     if (default_file.includes('dynamic') && dynamic_frame == 1  && !stopInterval) {
-            stopInterval = setInterval(() => loadScene({default_file:settings.scene}), 1000);
+            stopInterval = setInterval(() => loadScene({default_file:settings.scene}), 100);
         }
 }
 

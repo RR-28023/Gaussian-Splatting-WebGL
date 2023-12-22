@@ -185,7 +185,7 @@ class Camera {
         return front
     }
 
-    update() {
+    update(is_dynamic=false) {
         // Update current position
         vec3.add(this.pos, this.target, this.getPos(this.radius))
         //hardcode float32 array
@@ -231,16 +231,16 @@ class Camera {
         // this.inverse = mat4.create()
         // mat4.invert(this.inverse, this.vpm)
         // this.pos = this.inverse[]
-        this.updateWorker()
+        this.updateWorker(is_dynamic)
     }
 
-    updateWorker() {
+    updateWorker(is_dynamic=false) {
         // Calculate the dot product between last and current view-projection matrices
         // If they differ too much, the splats need to be sorted
         const dot = this.lastViewProjMatrix[2]  * this.vpm[2] 
                   + this.lastViewProjMatrix[6]  * this.vpm[6]
                   + this.lastViewProjMatrix[10] * this.vpm[10]
-        if (Math.abs(dot - 1) > 0.01) {
+        if ((Math.abs(dot - 1) > 0.01) || is_dynamic) {
             this.needsWorkerUpdate = true
             mat4.copy(this.lastViewProjMatrix, this.vpm)
         }
