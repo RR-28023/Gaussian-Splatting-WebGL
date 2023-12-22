@@ -15,6 +15,7 @@ let positionBuffer, positionData, opacityData
 let dynamic_frame = -1;
 let data = []
 let stopInterval;
+
 const settings = {
     renderResolution: 0.9,
     maxGaussians: 1e6,
@@ -110,24 +111,27 @@ async function loadScene({ scene, file, default_file }) {
         let reader = []
         let contentLength =[]
         if (default_file != null) {
-            let response;
-            // settings.scene = default_file
-            if (default_file.includes('dynamic')) {
+            let response = await fetch(`models/${default_file}.ply`)
+            if (!response.ok){
                 dynamic_frame = 0
-                for (let i = 0; i < 15; i++) {
-                    default_file = 'dynamic/test_' + i.toString()
-                    response = await fetch(`models/${default_file}.ply`)
-                    contentLength.push(parseInt(response.headers.get('content-length')))
-                    reader.push(response.body.getReader())
+                let more_files = true
+                let i=0
+                while (more_files){
+                    response = await fetch(`models/${default_file}/frame_${i}.ply`)
+                    if (response.ok){
+                        contentLength.push(parseInt(response.headers.get('content-length')))
+                        reader.push(response.body.getReader())
+                        i++
+                    }
+                    else {
+                        more_files = false
+                    }
                 }
-
             }
-            else {
-                response = await fetch(`models/${default_file}.ply`)
+            else{
                 contentLength = [parseInt(response.headers.get('content-length'))]
                 reader = [response.body.getReader()]
             }
-            
         }
         // Create a StreamableReader from a URL Response object
         else if (scene != null) {
@@ -170,24 +174,24 @@ async function loadScene({ scene, file, default_file }) {
 
     // Setup camera
     let cameraParameters = {}
-    if (default_file.includes('dynamic')) {
-        cameraParameters = defaultCameraParameters['dynamic']
-        dynamic_frame = (dynamic_frame <13) ? dynamic_frame+1:0
-    }
-    else {
-        cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
-    }
+    cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
     cam = reset_camera ? new Camera(cameraParameters) : cam
     cam.disableMovement = false
-    dynamic_frame > 1 ? cam.update(true):cam.update()
+    dynamic_frame > 0 ? cam.update(true):cam.update()
 
     // Update GUI
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
-    if (default_file.includes('dynamic') && dynamic_frame == 1  && !stopInterval) {
+    if (dynamic_frame == 0  && !stopInterval) {
             stopInterval = setInterval(() => loadScene({default_file:settings.scene}), 100);
         }
+    // if in dynamic, increase the numbered frame
+    if (dynamic_frame > -1) {
+        dynamic_frame += 1
+        if (dynamic_frame >= data.length) dynamic_frame = 0
+    }
+
 }
 
 function requestRender(...params) {
