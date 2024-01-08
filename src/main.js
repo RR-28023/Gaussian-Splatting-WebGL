@@ -21,7 +21,7 @@ const settings = {
     maxGaussians: 1e6,
     scalingModifier: 1,
     sortingAlgorithm: 'count sort',
-    bgColor: '#000000',
+    bgColor: '#ffffff',
     speed: 0.07,
     fov: 35.58,
     debugDepth: false,
@@ -115,7 +115,7 @@ async function loadScene({ scene, file, default_file }) {
             if (!response.ok){
                 dynamic_frame = 0
                 let more_files = true
-                let i=0
+                let i=1
                 while (more_files){
                     response = await fetch(`models/${default_file}/frame_${i}.ply`)
                     if (response.ok){
@@ -165,11 +165,12 @@ async function loadScene({ scene, file, default_file }) {
         }
     }
     // Send gaussian data to the worker
-    worker.postMessage({
-        gaussians: {
-            ...data[Math.max(0, dynamic_frame)], count: gaussianCount
-        }
-    })
+    console.log(`Sending frame ${dynamic_frame} to worker`)
+    idx = Math.max(0, dynamic_frame)
+    gaussianCount = data[idx].positions.length / 3
+    document.getElementById('frameNumber').innerText = `Frame: ${dynamic_frame}`;
+    worker.postMessage({gaussians: { ...data[idx], count: gaussianCount }})
+    document.body.style.backgroundColor = settings.bgColor
 
 
     // Setup camera
@@ -184,7 +185,7 @@ async function loadScene({ scene, file, default_file }) {
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
     if (dynamic_frame == 0  && !stopInterval) {
-            stopInterval = setInterval(() => loadScene({default_file:settings.scene}), 100);
+            stopInterval = setInterval(() => loadScene({default_file:settings.scene}), 500);
         }
     // if in dynamic, increase the numbered frame
     if (dynamic_frame > -1) {

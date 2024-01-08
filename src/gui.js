@@ -57,7 +57,6 @@ function initGUI() {
         document.body.style.backgroundColor = value
         requestRender()
     })
-
     otherFolder.add(settings, 'speed', 0.01, 2, 0.01).name('Camera Speed')
 
     otherFolder.add(settings, 'fov', 30, 110, 1).name('FOV')

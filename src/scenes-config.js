@@ -15,15 +15,15 @@ const defaultCameraParameters = {
     //     camera: [3.12, 2.30, 12], //[theta, phi, radius],
     //     min_phi: 1.8
     // }, 
-    'dynamic': {
-        up: [-0.102, -0.054, -0.993],
-        target: [0.094, 0.574, 0.895],
+    'colleen_and_ram_dynamic': {
+        up: [-0.031, +0.999, -0.010],
+        target: [0.214, 0.305, 0.259],
         defaultCameraMode: 'orbit',
         size: '?',
-        camera: [6.52, 1.65, 7], //[theta, phi, radius],
+        camera: [3.28, 1.65, 3], //[theta, phi, radius],
         min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 3.7
+        max_phi: 6.0,
+        min_radius: 2
     },
     'test': {
         up: [-0.102, -0.054, -0.993],
@@ -80,7 +80,7 @@ const defaultCameraParameters = {
         camera: [2.76, 2.03, 5], //[theta, phi, radius],
         min_phi: 1.8,
         max_phi: 2.5,
-        min_radius: 4 
+        min_radius: 4         
     },
     // 'Hotwheel yellow van cleaned': {
     //     up: [0.073, 0.920, 0.386],
