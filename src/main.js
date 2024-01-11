@@ -87,13 +87,24 @@ async function main() {
 
     // Setup gizmo renderer
     await gizmoRenderer.init()
+    const back_data = await load_background()    
 
     // Load the default scene
-    await loadScene({ default_file: settings.scene })
+    await loadScene({ default_file: settings.scene , background_data: back_data})
+}
+
+async function load_background() {
+    background_scene = 'living room'
+    response = await fetch(`models/${background_scene}.ply`)
+    contentLength = parseInt(response.headers.get('content-length'))
+    reader = response.body.getReader()
+    background_data = []
+    const content = await downloadPly(reader, contentLength)    
+    return await loadPly(content.buffer)
 }
 
 // Load a .ply scene specified as a name (URL fetch) or local file
-async function loadScene({ scene, file, default_file }) {
+async function loadScene({ scene, file, default_file, background_data}) {
     let reset_camera = false;
     if (!default_file.includes('dynamic')) {dynamic_frame = -1}
     if (dynamic_frame == -1) {
@@ -169,7 +180,21 @@ async function loadScene({ scene, file, default_file }) {
     idx = Math.max(0, dynamic_frame)
     gaussianCount = data[idx].positions.length / 3
     document.getElementById('frameNumber').innerText = `Frame: ${dynamic_frame}`;
-    worker.postMessage({gaussians: { ...data[idx], count: gaussianCount }})
+
+    // Append the back data to the data elements if it exists
+    data_to_send = data[idx]
+
+    if (background_data) {
+        gaussianCount += background_data.positions.length / 3
+        data_to_send = {
+            positions: [...data_to_send.positions, ...background_data.positions],
+            colors: [...data_to_send.colors, ...background_data.colors],
+            opacities: [...data_to_send.opacities, ...background_data.opacities],
+            cov3Ds: [...data_to_send.cov3Ds, ...background_data.cov3Ds],
+        }
+    }
+
+    worker.postMessage({gaussians: { ...data_to_send, count: gaussianCount }})
     document.body.style.backgroundColor = settings.bgColor
 
 
