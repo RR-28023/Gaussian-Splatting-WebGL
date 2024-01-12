@@ -201,10 +201,6 @@ async function downloadPly(reader, contentLength) {
                 downloadedBytes += value.byteLength
                 buffer.set(value, downloadedBytes - value.byteLength)
 
-                const progress = (downloadedBytes / contentLength) * 100
-                document.querySelector('#loading-bar').style.width = progress + '%'
-                document.querySelector('#loading-text').textContent = `Downloading 3D scene... ${progress.toFixed(2)}%`
-
                 readNextChunk()
             }
             else {

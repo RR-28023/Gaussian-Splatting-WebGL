@@ -25,16 +25,16 @@ const defaultCameraParameters = {
         max_phi: 6.0,
         min_radius: 2
     },
-    'test': {
-        up: [-0.102, -0.054, -0.993],
-        target: [0.094, 0.574, 0.895],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [6.52, 1.65, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 3.7
-    },
+    // 'test': {
+    //     up: [-0.102, -0.054, -0.993],
+    //     target: [0.094, 0.574, 0.895],
+    //     defaultCameraMode: 'orbit',
+    //     size: '?',
+    //     camera: [6.52, 1.65, 7], //[theta, phi, radius],
+    //     min_phi: 1.0,
+    //     max_phi: 2.5,
+    //     min_radius: 3.7
+    // },
     'Hotwheel red': {
         up: [-0.058, 0.954, 0.294],
         target:  [-0.231,0.991,0.844], 

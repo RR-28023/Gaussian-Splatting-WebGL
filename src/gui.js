@@ -18,10 +18,13 @@ function initGUI() {
     const gui = new lil.GUI({title: 'Settings'})
 
     const sceneNames = Object.entries(defaultCameraParameters).map(([name,]) => `${name}`)
+    const backNames = ['None', 'living room']
     settings.scene = sceneNames[0]
-    gui.add(settings, 'scene', sceneNames).name('Scene').listen()
-       .onChange((scene) => loadScene({ default_file: scene }))
-
+    settings.back = backNames[0]
+    gui.add(settings, 'scene', sceneNames).name('Scene').listen().onChange((scene) => loadScene(scene, settings.back))
+    
+    gui.add(settings, 'back', backNames).name('Background').listen().onChange((back) => loadScene(settings.scene, back))
+    
     gui.add(settings, 'renderResolution', 0.1, 1, 0.01).name('Preview Resolution')
 
     maxGaussianController = gui.add(settings, 'maxGaussians', 1, settings.maxGaussians, 1).name('Max Gaussians')
@@ -33,17 +36,6 @@ function initGUI() {
     gui.add(settings, 'scalingModifier', 0.01, 1, 0.01).name('Scaling Modifier')
         .onChange(() => requestRender())
 
-    // File upload handler
-    gui.add(settings, 'uploadFile').name('Upload .ply file')
-    document.querySelector('#input').addEventListener('change', async e => {
-        if (e.target.files.length === 0) return
-        try {
-            await loadScene({ file: e.target.files[0] })
-        } catch (error) {
-            document.querySelector('#loading-text').textContent = `An error occured when trying to read the file.`
-            throw error
-        }
-    })
 
     // Other settings
     const otherFolder = gui.addFolder('Other Settings').close()
