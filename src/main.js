@@ -12,7 +12,6 @@ let sceneMin, sceneMax
 
 let gizmoRenderer = new GizmoRenderer()
 let positionBuffer, positionData, opacityData
-let dynamic_frame = -1;
 let data = []
 let stopInterval;
 
@@ -110,15 +109,17 @@ async function loadScene(scene_name, back_name) {
         // Load the first frame
         window.frame_idx = 0
         loadNextFrame(frames_data, back_data)     
-        // Wait 5 seconds for the first frame to be loaded before starting the interval
-        await sleep(7000)
-        stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 5000);
+        // Wait 3 seconds for the first frame to be loaded before starting the interval
+        await sleep(3000)
+        stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
         //await load_next_frame(frames_data, back_data)
     }
     else {
         // Load the a static scene
         await loadStaticScene(scene_name, back_data)
     }
+    cam.disableMovement = false
+
 }
 
 async function sendGaussianDataToWorker(scene_data, background_data) {
@@ -150,6 +151,7 @@ async function loadNextFrame(frames_data, background_data) {
     await sendGaussianDataToWorker(frames_data[window.frame_idx], background_data)
     // Append the back data to the data elements if it exists
     cam.update(is_dynamic=true)
+    document.getElementById('frameNumber').innerText = `Frame: ${window.frame_idx}`;
     document.body.style.backgroundColor = settings.bgColor    
     window.frame_idx += 1
     if (window.frame_idx >= frames_data.length) window.frame_idx = 0
@@ -241,7 +243,6 @@ async function loadStaticScene(scene_name, background_data) {
     // cameraParameters = defaultCameraParameters[scene_name]
     // cam = reset_camera ? new Camera(cameraParameters) : cam
     // cam.disableMovement = false
-    // dynamic_frame > 0 ? cam.update(true):cam.update()
 
     // Update GUI
     settings.maxGaussians = gaussianCount

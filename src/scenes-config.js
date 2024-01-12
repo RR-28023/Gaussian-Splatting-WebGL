@@ -1,12 +1,21 @@
 const defaultCameraParameters = {
-    // 'first frame': {
-    //      up: [0.026, 0.980, 0.197],
-    //      target:  [0.294,0.662,0.218], 
-    //      defaultCameraMode: 'orbit',
-    //      size: '?',
-    //      camera: [4.9, 2.2, 3], //[theta, phi, radius],
-    //      min_phi: 1.2
-    // }, 
+//     'lancia hotwheel': {
+//         up: [0.004, 0.831, 0.557],
+//         target:  [0.086,2.104,1.882], 
+//         defaultCameraMode: 'orbit',
+//         size: '?',
+//         camera: [2.06, 2.1, 6], //[theta, phi, radius],
+//         min_phi: 2.0,
+//         min_radius: 3.5
+//    }, 
+    'first frame': {
+         up: [0.026, 0.980, 0.197],
+         target:  [0.294,0.662,0.218], 
+         defaultCameraMode: 'orbit',
+         size: '?',
+         camera: [4.9, 2.2, 3], //[theta, phi, radius],
+         min_phi: 1.2
+    }, 
     // 'Hotwheel blue max degree 3': {
     //     up: [0.010, 0.620, 0.784],
     //     target:  [0.373,1.331,1.886], 
