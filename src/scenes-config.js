@@ -1,12 +1,21 @@
 const defaultCameraParameters = {
-    // 'first frame': {
-    //      up: [0.026, 0.980, 0.197],
-    //      target:  [0.294,0.662,0.218], 
-    //      defaultCameraMode: 'orbit',
-    //      size: '?',
-    //      camera: [4.9, 2.2, 3], //[theta, phi, radius],
-    //      min_phi: 1.2
-    // }, 
+//     'lancia hotwheel': {
+//         up: [0.004, 0.831, 0.557],
+//         target:  [0.086,2.104,1.882], 
+//         defaultCameraMode: 'orbit',
+//         size: '?',
+//         camera: [2.06, 2.1, 6], //[theta, phi, radius],
+//         min_phi: 2.0,
+//         min_radius: 3.5
+//    }, 
+    'first frame': {
+         up: [0.026, 0.980, 0.197],
+         target:  [0.294,0.662,0.218], 
+         defaultCameraMode: 'orbit',
+         size: '?',
+         camera: [4.9, 2.2, 3], //[theta, phi, radius],
+         min_phi: 1.2
+    }, 
     // 'Hotwheel blue max degree 3': {
     //     up: [0.010, 0.620, 0.784],
     //     target:  [0.373,1.331,1.886], 
@@ -15,6 +24,26 @@ const defaultCameraParameters = {
     //     camera: [3.12, 2.30, 12], //[theta, phi, radius],
     //     min_phi: 1.8
     // }, 
+    'colleen_and_ram_dynamic': {
+        up: [-0.031, +0.999, -0.010],
+        target: [0.214, 0.305, 0.259],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [3.28, 1.65, 3], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 6.0,
+        min_radius: 2
+    },
+    // 'test': {
+    //     up: [-0.102, -0.054, -0.993],
+    //     target: [0.094, 0.574, 0.895],
+    //     defaultCameraMode: 'orbit',
+    //     size: '?',
+    //     camera: [6.52, 1.65, 7], //[theta, phi, radius],
+    //     min_phi: 1.0,
+    //     max_phi: 2.5,
+    //     min_radius: 3.7
+    // },
     'Hotwheel red': {
         up: [-0.058, 0.954, 0.294],
         target:  [-0.231,0.991,0.844], 
@@ -23,7 +52,7 @@ const defaultCameraParameters = {
         camera: [4.37, 1.98, 7], //[theta, phi, radius],
         min_phi: 1.8,
         max_phi: 2.5,
-        min_radius: 3.7 
+        min_radius: 3.7
     }, 
     'Hotwheel blue': {
         up: [0.010, 0.620, 0.784],
@@ -60,7 +89,7 @@ const defaultCameraParameters = {
         camera: [2.76, 2.03, 5], //[theta, phi, radius],
         min_phi: 1.8,
         max_phi: 2.5,
-        min_radius: 4 
+        min_radius: 4         
     },
     // 'Hotwheel yellow van cleaned': {
     //     up: [0.073, 0.920, 0.386],

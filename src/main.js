@@ -12,13 +12,15 @@ let sceneMin, sceneMax
 
 let gizmoRenderer = new GizmoRenderer()
 let positionBuffer, positionData, opacityData
+let data = []
+let stopInterval;
 
 const settings = {
     renderResolution: 0.9,
     maxGaussians: 1e6,
     scalingModifier: 1,
     sortingAlgorithm: 'count sort',
-    bgColor: '#000000',
+    bgColor: '#ffffff',
     speed: 0.07,
     fov: 35.58,
     debugDepth: false,
@@ -26,12 +28,15 @@ const settings = {
     sortTime: 'NaN',
     // shDegree: 2,
     // maxShDegree: 3,
-    uploadFile: () => document.querySelector('#input').click(),
 
     // Camera calibration
-    calibrateCamera: () => {},
-    finishCalibration: () => {},
+    calibrateCamera: () => { },
+    finishCalibration: () => { },
     showGizmo: true
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function main() {
@@ -85,75 +90,172 @@ async function main() {
     // Setup gizmo renderer
     await gizmoRenderer.init()
 
-    // Load the default scene
-    await loadScene({ default_file: settings.scene })
+    // Load scene
+    await loadScene(settings.scene, settings.back)
+
+}
+
+async function loadScene(scene_name, back_name) {
+    // Instantiate the camera
+    cam = new Camera(defaultCameraParameters[scene_name])
+    cam.disableMovement = true
+    var back_data = null
+    if (back_name != 'None') {
+        var back_data = await loadBackgroundPly(back_name)
+    }
+    if (scene_name.includes('dynamic')) {
+        // Load the background PLY data
+        const frames_data = await loadFramesPly(scene_name)    
+        // Load the first frame
+        window.frame_idx = 0
+        loadNextFrame(frames_data, back_data)     
+        // Wait 3 seconds for the first frame to be loaded before starting the interval
+        await sleep(3000)
+        stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
+        //await load_next_frame(frames_data, back_data)
+    }
+    else {
+        // Load the a static scene
+        await loadStaticScene(scene_name, back_data)
+    }
+    cam.disableMovement = false
+
+}
+
+async function sendGaussianDataToWorker(scene_data, background_data) {
+    
+    var data_to_send = scene_data
+    gaussianCount = scene_data.positions.length / 3
+    if (background_data) {
+        start = performance.now()
+        gaussianCount += background_data.positions.length / 3
+        
+        data_to_send.positions = data_to_send.positions.concat(background_data.positions)
+        data_to_send.colors = data_to_send.colors.concat(background_data.colors)
+        data_to_send.opacities = data_to_send.opacities.concat(background_data.opacities)
+        data_to_send.cov3Ds = data_to_send.cov3Ds.concat(background_data.cov3Ds)        
+        const appendTime = `${((performance.now() - start)/1000).toFixed(3)}s`
+        console.log(`[Frame loader] Appended background data in ${appendTime}`)
+    }
+    settings.maxGaussians = gaussianCount
+    worker.postMessage({gaussians: { ...data_to_send, count: gaussianCount }})
+    
+} 
+
+
+async function loadNextFrame(frames_data, background_data) {
+    
+    // Send gaussian data to the worker
+    gaussianCount = frames_data[window.frame_idx].positions.length / 3
+    console.log(`Sending frame ${window.frame_idx} to worker`)
+    await sendGaussianDataToWorker(frames_data[window.frame_idx], background_data)
+    // Append the back data to the data elements if it exists
+    cam.update(is_dynamic=true)
+    document.getElementById('frameNumber').innerText = `Frame: ${window.frame_idx}`;
+    document.body.style.backgroundColor = settings.bgColor    
+    window.frame_idx += 1
+    if (window.frame_idx >= frames_data.length) window.frame_idx = 0
+
+    // Update GUI
+    // settings.maxGaussians = gaussianCount
+    // maxGaussianController.max(gaussianCount)
+    // maxGaussianController.updateDisplay()
+
+}
+
+async function loadFramesPly(frames_folder) {
+    data = []
+    let i=1
+    let reader = []
+    let contentLength = []
+    while (true){
+        response = await fetch(`models/${frames_folder}/frame_${i}.ply`)
+        if (response.ok){
+            contentLength.push(parseInt(response.headers.get('content-length')))
+            reader.push(response.body.getReader())
+            i++
+        }
+        else {
+            break
+        }
+    }
+    const n_frames = i
+    
+    for (let i = 0; i < reader.length; i++) {
+        // Download .ply file and monitor the progress
+        const content = await downloadPly(reader[i], contentLength[i])
+        // Load and pre-process gaussian data from .ply file
+        frame_ply_data = await loadPly(content.buffer)
+        delete frame_ply_data.scales
+        data.push(frame_ply_data)
+        const progress = ((i + 1) /n_frames) * 100
+        document.querySelector('#loading-bar').style.width = progress + '%'
+        document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
+    }
+    return data
+}
+
+async function loadBackgroundPly(back_name) {
+    response = await fetch(`models/${back_name}.ply`)
+    contentLength = parseInt(response.headers.get('content-length'))
+    reader = response.body.getReader()
+    background_data = []
+    const content = await downloadPly(reader, contentLength)    
+    back_data = await loadPly(content.buffer)
+    // getGravityCenter(back_data)        
+    delete back_data.scales
+    return back_data
 }
 
 // Load a .ply scene specified as a name (URL fetch) or local file
-async function loadScene({scene, file, default_file}) {
-    gl.clearColor(0, 0, 0, 0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    if (cam) cam.disableMovement = true
+async function loadStaticScene(scene_name, background_data) {
+    // gl.clearColor(0, 0, 0, 0)
+    // gl.clear(gl.COLOR_BUFFER_BIT)
     document.querySelector('#loading-container').style.opacity = 1
-
-    let reader, contentLength
-    if (default_file != null) {
-        const response = await fetch(`models/${default_file}.ply`)
-        contentLength = parseInt(response.headers.get('content-length'))
-        reader = response.body.getReader()
-        settings.scene = default_file
-    }
-    // Create a StreamableReader from a URL Response object
-    else if (scene != null) {
-        scene = scene.split('(')[0].trim()
-        const url = `https://huggingface.co/kishimisu/3d-gaussian-splatting-webgl/resolve/main/${scene}.ply`
-        const response = await fetch(url)
+    let response = await fetch(`models/${scene_name}.ply`)
+    
+    if (response.ok) {
         contentLength = parseInt(response.headers.get('content-length'))
         reader = response.body.getReader()
     }
-    // Create a StreamableReader from a File object
-    else if (file != null) {
-        contentLength = file.size
-        reader = file.stream().getReader()
-        settings.scene = 'custom'
-    }
-    else
-        throw new Error('No scene or file specified')
-
+    
+    else {
+        throw new Error('Scene .ply not found')
+    }    
     // Download .ply file and monitor the progress
     const content = await downloadPly(reader, contentLength)
-
     // Load and pre-process gaussian data from .ply file
-    const data = await loadPly(content.buffer)
-
+    data = await loadPly(content.buffer)
+    
     // Print gravity center
     getGravityCenter(data)
+    delete data.scales
     
-    // Remove scales from  (only needed for gravity center calculation)
-    data.scales = null
-
-
     // Send gaussian data to the worker
-    worker.postMessage({ gaussians: {
-        ...data, count: gaussianCount
-    } })
+    console.log(`Sending static gaussian data to worker`)
+    await sendGaussianDataToWorker(data, background_data)
+    document.body.style.backgroundColor = settings.bgColor
+    cam.update(is_dynamic=false)
+
 
     // Setup camera
-    const cameraParameters = (scene || default_file) ? defaultCameraParameters[scene || default_file] : {}
-    cam = new Camera(cameraParameters)
-    cam.update()
+    // let cameraParameters = {}
+    // cameraParameters = defaultCameraParameters[scene_name]
+    // cam = reset_camera ? new Camera(cameraParameters) : cam
+    // cam.disableMovement = false
 
     // Update GUI
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
+
 }
 
 function requestRender(...params) {
-    if (renderFrameRequest != null) 
+    if (renderFrameRequest != null)
         cancelAnimationFrame(renderFrameRequest)
 
-    renderFrameRequest = requestAnimationFrame(() => render(...params)) 
+    renderFrameRequest = requestAnimationFrame(() => render(...params))
 }
 
 // Render a frame on the canvas
@@ -216,7 +318,7 @@ function render(width, height, res) {
         const nextWidth = Math.round(canvasSize[0] * nextResolution)
         const nextHeight = Math.round(canvasSize[1] * nextResolution)
 
-        if (renderTimeout != null) 
+        if (renderTimeout != null)
             clearTimeout(renderTimeout)
 
         renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200)
@@ -227,11 +329,11 @@ function render(width, height, res) {
 function getGravityCenter(data) {
     let sumX = 0, sumY = 0, sumZ = 0, sumScale = 0
 
-    for (let i = 0; i < data.positions.length; i+=3) {
+    for (let i = 0; i < data.positions.length; i += 3) {
         let avg_scale = (data.scales[i] + data.scales[i + 1] + data.scales[i + 2]) / 3
-        sumX += data.positions[i]*avg_scale
-        sumY += data.positions[i + 1]*avg_scale
-        sumZ += data.positions[i + 2]*avg_scale
+        sumX += data.positions[i] * avg_scale
+        sumY += data.positions[i + 1] * avg_scale
+        sumZ += data.positions[i + 2] * avg_scale
         // Get t
         sumScale += avg_scale
     }
