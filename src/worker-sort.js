@@ -63,7 +63,6 @@ onmessage = function(event) {
 
         const sortTime = `${((performance.now() - start)/1000).toFixed(3)}s`
         console.log(`[Worker] Sorted ${gaussians.count} gaussians in ${sortTime}. Algorithm: ${sortingAlgorithm}`)
-
         postMessage({
             data, sortTime,
         })
