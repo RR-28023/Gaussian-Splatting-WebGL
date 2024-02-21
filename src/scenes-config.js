@@ -7,15 +7,70 @@ const defaultCameraParameters = {
 //         camera: [2.06, 2.1, 6], //[theta, phi, radius],
 //         min_phi: 2.0,
 //         min_radius: 3.5
-//    }, 
-    'first frame': {
-         up: [0.026, 0.980, 0.197],
-         target:  [0.294,0.662,0.218], 
-         defaultCameraMode: 'orbit',
-         size: '?',
-         camera: [4.9, 2.2, 3], //[theta, phi, radius],
-         min_phi: 1.2
-    }, 
+//    },
+   
+    'dynamic_experiment_5': {
+        up: [0.004, 0.002, -1.000],
+        target: [0.094, 0.574, 0.895],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [4.1, 2.0, 7], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 2.5,
+        min_radius: 1.0
+    },
+    
+    'dynamic_colmap_pablo': {
+        up: [-0.050, 0.961, 0.271],
+        target: [0.005, 0.520, 0.682],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [4.1, 2.0, 7], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 2.5,
+        min_radius: 1.0
+    },
+    'dynamic_smpl_floor': {
+        up: [0.004, 0.002, 1.000],
+        target: [0.094, 0.574, 0.895],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [-1.49, 1.17, 7], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 2.5,
+        min_radius: 1.0
+    },
+    'dynamic_soccer_new': {
+        up: [-0.102, -0.054, -0.993],
+        target: [0.094, 0.574, 0.895],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [6.52, 1.65, 7], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 2.5,
+        min_radius: 1.0
+    },
+    'dynamic_soccer_no_back': {
+        up: [-0.102, -0.054, -0.993],
+        target: [0.094, 0.574, 0.895],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [6.52, 1.65, 7], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 2.5,
+        min_radius: 1.0
+    },
+    'dynamic_soccer': {
+        up: [-0.102, -0.054, -0.993],
+        target: [0.094, 0.574, 0.895],
+        defaultCameraMode: 'orbit',
+        size: '?',
+        camera: [6.52, 1.65, 7], //[theta, phi, radius],
+        min_phi: 1.0,
+        max_phi: 2.5,
+        min_radius: 1.0
+    },
+    
     // 'Hotwheel blue max degree 3': {
     //     up: [0.010, 0.620, 0.784],
     //     target:  [0.373,1.331,1.886], 
