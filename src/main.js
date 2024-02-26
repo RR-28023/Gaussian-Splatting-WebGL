@@ -105,10 +105,10 @@ async function loadScene(scene_name, back_name) {
     }
     if (scene_name.includes('dynamic')) {
         // Load the background PLY data
-        const frames_data = await loadFramesPly(scene_name)    
+        const frames_data = await loadFramesPly(scene_name)
         // Load the first frame
         window.frame_idx = 0
-        loadNextFrame(frames_data, back_data)     
+        loadNextFrame(frames_data, back_data)
         // Wait 3 seconds for the first frame to be loaded before starting the interval
         await sleep(3000)
         stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
@@ -123,28 +123,28 @@ async function loadScene(scene_name, back_name) {
 }
 
 async function sendGaussianDataToWorker(scene_data, background_data) {
-    
+
     var data_to_send = scene_data
     gaussianCount = scene_data.positions.length / 3
     if (background_data) {
         start = performance.now()
         gaussianCount += background_data.positions.length / 3
-        
+
         data_to_send.positions = data_to_send.positions.concat(background_data.positions)
         data_to_send.colors = data_to_send.colors.concat(background_data.colors)
         data_to_send.opacities = data_to_send.opacities.concat(background_data.opacities)
-        data_to_send.cov3Ds = data_to_send.cov3Ds.concat(background_data.cov3Ds)        
+        data_to_send.cov3Ds = data_to_send.cov3Ds.concat(background_data.cov3Ds)
         const appendTime = `${((performance.now() - start)/1000).toFixed(3)}s`
         console.log(`[Frame loader] Appended background data in ${appendTime}`)
     }
     settings.maxGaussians = gaussianCount
     worker.postMessage({gaussians: { ...data_to_send, count: gaussianCount }})
-    
-} 
+
+}
 
 
 async function loadNextFrame(frames_data, background_data) {
-    
+
     // Send gaussian data to the worker
     gaussianCount = frames_data[window.frame_idx].positions.length / 3
     console.log(`Sending frame ${window.frame_idx} to worker`)
@@ -152,7 +152,7 @@ async function loadNextFrame(frames_data, background_data) {
     // Append the back data to the data elements if it exists
     cam.update(is_dynamic=true)
     document.getElementById('frameNumber').innerText = `Frame: ${window.frame_idx}`;
-    document.body.style.backgroundColor = settings.bgColor    
+    document.body.style.backgroundColor = settings.bgColor
     window.frame_idx += 1
     if (window.frame_idx >= frames_data.length) window.frame_idx = 0
 
@@ -163,36 +163,74 @@ async function loadNextFrame(frames_data, background_data) {
 
 }
 
+// async function loadFramesPly(frames_folder) {
+//     data = []
+//     let i=1
+//     let reader = []
+//     let contentLength = []
+//     while (true){
+//         response = await fetch(`models/${frames_folder}/frame_${i}.ply`)
+//         if (response.ok){
+//             contentLength.push(parseInt(response.headers.get('content-length')))
+//             reader.push(response.body.getReader())
+//             i++
+//         }
+//         else {
+//             break
+//         }
+//     }
+//     const n_frames = i
+
+//     // CARBALLO TODO : PODRÍA SER QUE ESTE FOR ESTÉ LASTRANDO TODO PORQUE CADA VEZ HACE DOS AWAITS
+
+//     for (let i = 0; i < reader.length; i++) {
+//         // Download .ply file and monitor the progress
+//         const content = await downloadPly(reader[i], contentLength[i])
+//         // Load and pre-process gaussian data from .ply file
+//         frame_ply_data = await loadPly(content.buffer)
+//         delete frame_ply_data.scales
+//         data.push(frame_ply_data)
+//         const progress = ((i + 1) /n_frames) * 100
+//         document.querySelector('#loading-bar').style.width = progress + '%'
+//         document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
+//     }
+//     return data
+// }
+
 async function loadFramesPly(frames_folder) {
-    data = []
-    let i=1
-    let reader = []
-    let contentLength = []
-    while (true){
-        response = await fetch(`models/${frames_folder}/frame_${i}.ply`)
-        if (response.ok){
-            contentLength.push(parseInt(response.headers.get('content-length')))
-            reader.push(response.body.getReader())
-            i++
-        }
-        else {
-            break
-        }
-    }
-    const n_frames = i
-    
-    for (let i = 0; i < reader.length; i++) {
-        // Download .ply file and monitor the progress
-        const content = await downloadPly(reader[i], contentLength[i])
-        // Load and pre-process gaussian data from .ply file
-        frame_ply_data = await loadPly(content.buffer)
-        delete frame_ply_data.scales
-        data.push(frame_ply_data)
-        const progress = ((i + 1) /n_frames) * 100
-        document.querySelector('#loading-bar').style.width = progress + '%'
-        document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
-    }
-    return data
+  const data = [];
+  let i = 1;
+  const reader = [];
+  const contentLength = [];
+  const progressBar = document.querySelector("#loading-bar");
+  const progressText = document.querySelector("#loading-text");
+
+  // Descargar todos los archivos PLY
+  while (true) {
+    const response = await fetch(`models/${frames_folder}/frame_${i}.ply`);
+    if (!response.ok) break;
+
+    contentLength.push(parseInt(response.headers.get("content-length")));
+    reader.push(response.body.getReader());
+    i++;
+  }
+  const n_frames = i - 1;
+
+  // Descargar y procesar los archivos PLY
+  for (let i = 0; i < n_frames; i++) {
+    // Descargar .ply y monitorear el progreso
+    const content = await downloadPly(reader[i], contentLength[i]);
+    // Cargar y preprocesar datos gaussianos del archivo .ply
+    const frame_ply_data = await loadPly(content.buffer);
+    delete frame_ply_data.scales;
+    data.push(frame_ply_data);
+
+    // Actualizar la barra de progreso
+    const progress = ((i + 1) / n_frames) * 100;
+    progressBar.style.width = progress + "%";
+    progressText.textContent = `Downloading 3D frames (${i + 1}/${n_frames}) ... ${progress.toFixed(2)}%`;
+  }
+  return data;
 }
 
 async function loadBackgroundPly(back_name) {
@@ -259,70 +297,145 @@ function requestRender(...params) {
 }
 
 // Render a frame on the canvas
+// function render(width, height, res) {
+//     // Update canvas size
+//     const resolution = res ?? settings.renderResolution
+//     const canvasWidth = width ?? Math.round(canvasSize[0] * resolution)
+//     const canvasHeight = height ?? Math.round(canvasSize[1] * resolution)
+
+//     if (gl.canvas.width != canvasWidth || gl.canvas.height != canvasHeight) {
+//         gl.canvas.width = canvasWidth
+//         gl.canvas.height = canvasHeight
+//     }
+
+//     // Setup viewport
+//     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+//     gl.clearColor(0, 0, 0, 0)
+//     gl.clear(gl.COLOR_BUFFER_BIT)
+//     gl.useProgram(program)
+
+//     // Update camera
+//     cam.update()
+
+//     // Original implementation parameters
+//     const W = gl.canvas.width
+//     const H = gl.canvas.height
+//     const tan_fovy = Math.tan(cam.fov_y * 0.5)
+//     const tan_fovx = tan_fovy * W / H
+//     const focal_y = H / (2 * tan_fovy)
+//     const focal_x = W / (2 * tan_fovx)
+
+//     gl.uniform1f(gl.getUniformLocation(program, 'W'), W)
+//     gl.uniform1f(gl.getUniformLocation(program, 'H'), H)
+//     gl.uniform1f(gl.getUniformLocation(program, 'focal_x'), focal_x)
+//     gl.uniform1f(gl.getUniformLocation(program, 'focal_y'), focal_y)
+//     gl.uniform1f(gl.getUniformLocation(program, 'tan_fovx'), tan_fovx)
+//     gl.uniform1f(gl.getUniformLocation(program, 'tan_fovy'), tan_fovy)
+//     gl.uniform1f(gl.getUniformLocation(program, 'scale_modifier'), settings.scalingModifier)
+//     gl.uniform3fv(gl.getUniformLocation(program, 'boxmin'), sceneMin)
+//     gl.uniform3fv(gl.getUniformLocation(program, 'boxmax'), sceneMax)
+//     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'projmatrix'), false, cam.vpm)
+//     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'viewmatrix'), false, cam.vm)
+
+//     // Custom parameters
+//     gl.uniform1i(gl.getUniformLocation(program, 'show_depth_map'), settings.debugDepth)
+
+//     // Draw
+//     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, settings.maxGaussians)
+
+//     // Draw gizmo
+//     gizmoRenderer.render()
+
+//     renderFrameRequest = null
+
+//     // Progressively draw with higher resolution after the camera stops moving
+//     let nextResolution = Math.floor(resolution * 4 + 1) / 4
+//     if (nextResolution - resolution < 0.1) nextResolution += .25
+
+//     if (nextResolution <= 1 && !cam.needsWorkerUpdate && !isWorkerSorting) {
+//         const nextWidth = Math.round(canvasSize[0] * nextResolution)
+//         const nextHeight = Math.round(canvasSize[1] * nextResolution)
+
+//         if (renderTimeout != null)
+//             clearTimeout(renderTimeout)
+
+//         renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200)
+//     }
+// }
+
 function render(width, height, res) {
-    // Update canvas size
-    const resolution = res ?? settings.renderResolution
-    const canvasWidth = width ?? Math.round(canvasSize[0] * resolution)
-    const canvasHeight = height ?? Math.round(canvasSize[1] * resolution)
+  const resolution = res || settings.renderResolution;
+  const canvasWidth = width || Math.round(canvasSize[0] * resolution);
+  const canvasHeight = height || Math.round(canvasSize[1] * resolution);
 
-    if (gl.canvas.width != canvasWidth || gl.canvas.height != canvasHeight) {
-        gl.canvas.width = canvasWidth
-        gl.canvas.height = canvasHeight
+  if (gl.canvas.width !== canvasWidth || gl.canvas.height !== canvasHeight) {
+    gl.canvas.width = canvasWidth;
+    gl.canvas.height = canvasHeight;
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  }
+
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(program);
+
+  cam.update();
+
+  const W = gl.canvas.width;
+  const H = gl.canvas.height;
+  const tan_fovy = Math.tan(cam.fov_y * 0.5);
+  const tan_fovx = (tan_fovy * W) / H;
+  const focal_y = H / (2 * tan_fovy);
+  const focal_x = W / (2 * tan_fovx);
+
+  const uniforms = {
+    W: W,
+    H: H,
+    focal_x: focal_x,
+    focal_y: focal_y,
+    tan_fovx: tan_fovx,
+    tan_fovy: tan_fovy,
+    scale_modifier: settings.scalingModifier,
+    boxmin: sceneMin,
+    boxmax: sceneMax,
+    projmatrix: cam.vpm,
+    viewmatrix: cam.vm,
+    show_depth_map: settings.debugDepth ? 1 : 0,
+  };
+
+  Object.keys(uniforms).forEach((name) => {
+    const value = uniforms[name];
+    const location = gl.getUniformLocation(program, name);
+    if (location !== null) {
+      if (Array.isArray(value)) {
+        switch (value.length) {
+          case 3:
+            gl.uniform3fv(location, value);
+            break;
+          // Handle other lengths if necessary
+          default:
+            break;
+        }
+      } else if (value instanceof Float32Array) {
+        gl.uniformMatrix4fv(location, false, value);
+      } else if (typeof value === "number") {
+        gl.uniform1f(location, value);
+      }
     }
+  });
 
-    // Setup viewport
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-    gl.clearColor(0, 0, 0, 0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    gl.useProgram(program)
+  gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, settings.maxGaussians);
+  gizmoRenderer.render();
+  renderFrameRequest = null;
 
-    // Update camera
-    cam.update()
+  const nextResolution = Math.floor(resolution * 4 + 1) / 4 + 0.25;
+  if (nextResolution <= 1 && !cam.needsWorkerUpdate && !isWorkerSorting) {
+    const nextWidth = Math.round(canvasSize[0] * nextResolution);
+    const nextHeight = Math.round(canvasSize[1] * nextResolution);
 
-    // Original implementation parameters
-    const W = gl.canvas.width
-    const H = gl.canvas.height
-    const tan_fovy = Math.tan(cam.fov_y * 0.5)
-    const tan_fovx = tan_fovy * W / H
-    const focal_y = H / (2 * tan_fovy)
-    const focal_x = W / (2 * tan_fovx)
+    if (renderTimeout != null) clearTimeout(renderTimeout);
 
-    gl.uniform1f(gl.getUniformLocation(program, 'W'), W)
-    gl.uniform1f(gl.getUniformLocation(program, 'H'), H)
-    gl.uniform1f(gl.getUniformLocation(program, 'focal_x'), focal_x)
-    gl.uniform1f(gl.getUniformLocation(program, 'focal_y'), focal_y)
-    gl.uniform1f(gl.getUniformLocation(program, 'tan_fovx'), tan_fovx)
-    gl.uniform1f(gl.getUniformLocation(program, 'tan_fovy'), tan_fovy)
-    gl.uniform1f(gl.getUniformLocation(program, 'scale_modifier'), settings.scalingModifier)
-    gl.uniform3fv(gl.getUniformLocation(program, 'boxmin'), sceneMin)
-    gl.uniform3fv(gl.getUniformLocation(program, 'boxmax'), sceneMax)
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'projmatrix'), false, cam.vpm)
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'viewmatrix'), false, cam.vm)
-
-    // Custom parameters
-    gl.uniform1i(gl.getUniformLocation(program, 'show_depth_map'), settings.debugDepth)
-
-    // Draw
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, settings.maxGaussians)
-
-    // Draw gizmo
-    gizmoRenderer.render()
-
-    renderFrameRequest = null
-
-    // Progressively draw with higher resolution after the camera stops moving
-    let nextResolution = Math.floor(resolution * 4 + 1) / 4
-    if (nextResolution - resolution < 0.1) nextResolution += .25
-
-    if (nextResolution <= 1 && !cam.needsWorkerUpdate && !isWorkerSorting) {
-        const nextWidth = Math.round(canvasSize[0] * nextResolution)
-        const nextHeight = Math.round(canvasSize[1] * nextResolution)
-
-        if (renderTimeout != null)
-            clearTimeout(renderTimeout)
-
-        renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200)
-    }
+    renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200);
+  }
 }
 
 // Create function to calculate the gravity center

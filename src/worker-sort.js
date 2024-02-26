@@ -10,7 +10,7 @@ onmessage = function(event) {
 
         depthIndex = new Uint32Array(gaussians.count)
 
-        console.log(`[Worker] Received ${gaussians.count} gaussians`)
+        // console.log(`[Worker] Received ${gaussians.count} gaussians`)
 
         data.positions = new Float32Array(gaussians.count * 3)
         data.opacities = new Float32Array(gaussians.count)
@@ -33,7 +33,7 @@ onmessage = function(event) {
         // Update arrays containing the data
         for (let j = 0; j < gaussians.count; j++) {
             const i = depthIndex[j]
-            if (n_sh_coeffs > 3) {                
+            if (n_sh_coeffs > 3) {
                 campos = { x: event.data.campos[0], y: event.data.campos[1], z: event.data.campos[2]}
                 colors = computeColorFromSH(i, n_sh_coeffs, gaussians.positions, campos, gaussians.harmonics)
             }
@@ -41,7 +41,7 @@ onmessage = function(event) {
                 colors = { x: gaussians.colors[i*3], y: gaussians.colors[i*3+1], z: gaussians.colors[i*3+2] }
             }
             data.colors[j*3] = colors.x
-            data.colors[j*3+1] = colors.y   
+            data.colors[j*3+1] = colors.y
             data.colors[j*3+2] = colors.z
 
             data.positions[j*3] = gaussians.positions[i*3]
@@ -112,7 +112,7 @@ function sortGaussiansByDepth(depthIndex, gaussians, viewMatrix, sortingAlgorith
             maxDepth = Math.max(maxDepth, depth)
             minDepth = Math.min(minDepth, depth)
         }
-        
+
         let depthInv = (256 * 256) / (maxDepth - minDepth);
         let counts0 = new Uint32Array(256*256);
         for (let i = 0; i < gaussians.count; i++) {
@@ -128,25 +128,25 @@ function sortGaussiansByDepth(depthIndex, gaussians, viewMatrix, sortingAlgorith
 // Quicksort algorithm - https://en.wikipedia.org/wiki/Quicksort#Hoare_partition_scheme
 function quicksort(A, B, lo, hi) {
     if (lo < hi) {
-        const p = partition(A, B, lo, hi) 
+        const p = partition(A, B, lo, hi)
         quicksort(A, B, lo, p)
-        quicksort(A, B, p + 1, hi) 
+        quicksort(A, B, p + 1, hi)
     }
 }
 function partition(A, B, lo, hi) {
     const pivot = A[Math.floor((hi - lo)/2) + lo]
-    let i = lo - 1 
+    let i = lo - 1
     let j = hi + 1
-  
+
     while (true) {
         do { i++ } while (A[i] < pivot)
         do { j-- } while (A[j] > pivot)
-    
+
         if (i >= j) return j
-        
+
         let tmp = A[i]; A[i] = A[j]; A[j] = tmp // Swap A
             tmp = B[i]; B[i] = B[j]; B[j] = tmp // Swap B
-    }    
+    }
 }
 
 function computeColorFromSH(idx, n_sh_coeffs, means, campos, shs) {
@@ -187,24 +187,24 @@ function computeColorFromSH(idx, n_sh_coeffs, means, campos, shs) {
     result = sh[0].map(el => el * SH_C0);
 
     // Further calculations based on the degree of spherical harmonics
-    
+
     if (n_sh_coeffs > 3) { // degree > 0
         let x = dir.x;
         let y = dir.y;
         let z = dir.z;
-    
-        result = result.map((el, i) => 
-            el 
+
+        result = result.map((el, i) =>
+            el
             - sh[1].map(el => el * SH_C1 * y)[i]
-            - sh[2].map(el => el * SH_C1 * z)[i] 
+            - sh[2].map(el => el * SH_C1 * z)[i]
             - sh[3].map(el => el * SH_C1 * x)[i]
         )
 
         if (n_sh_coeffs > 12) { // degree > 1
             xx = x * x, yy = y * y, zz = z * z
             xy = x * y, yz = y * z, xz = x * z
-            result = result.map((el, i) => 
-                el 
+            result = result.map((el, i) =>
+                el
                 + SH_C2[0] * xy * sh[4][i]
                 + SH_C2[1] * yz * sh[5][i]
                 + SH_C2[2] * (2.0 * zz - xx - yy) * sh[6][i]
@@ -213,7 +213,7 @@ function computeColorFromSH(idx, n_sh_coeffs, means, campos, shs) {
             )
             if (n_sh_coeffs > 27) { // degree > 2
                 result = result.map((el, i) =>
-                    el 
+                    el
                     + SH_C3[0] * y * (3.0 * xx - yy) * sh[9][i]
                     + SH_C3[1] * xy * z * sh[10][i]
                     + SH_C3[2] * y * (4.0 * zz - xx - yy) * sh[11][i]

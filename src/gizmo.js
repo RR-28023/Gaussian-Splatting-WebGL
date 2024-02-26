@@ -46,7 +46,7 @@ class GizmoRenderer {
 
         this.planeVertices = new Float32Array([...v1, ...v2, ...v3, ...v4])
         this.planeNormal = normal
-        if (this.planeNormal[2] < 0) vec3.scale(this.planeNormal, this.planeNormal, -1)        
+        if (this.planeNormal[2] < 0) vec3.scale(this.planeNormal, this.planeNormal, -1)
     }
 
     render() {
@@ -56,7 +56,7 @@ class GizmoRenderer {
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
         gl.bufferData(gl.ARRAY_BUFFER, this.planeVertices, gl.DYNAMIC_DRAW)
-        
+
         const positionAttributeLocation = gl.getAttribLocation(this.program, "a_pos")
         gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0)
 
@@ -74,8 +74,8 @@ class GizmoRenderer {
         else {
             gl.vertexAttribDivisor(positionAttributeLocation, 0)
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-        }        
-        
+        }
+
         // Undo WebGL state changes
         gl.blendFunc(gl.ONE_MINUS_DST_ALPHA, gl.ONE)
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);

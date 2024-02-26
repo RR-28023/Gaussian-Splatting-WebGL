@@ -72,11 +72,11 @@ void main() {
     vec3 p_orig = a_center;
 
     // Discard splats outside of the scene bounding box (should not happen)
-    // if (p_orig.x < boxmin.x || p_orig.y < boxmin.y || p_orig.z < boxmin.z ||
-    //     p_orig.x > boxmax.x || p_orig.y > boxmax.y || p_orig.z > boxmax.z) {
-    //         gl_Position = vec4(0, 0, 0, 1);
-    //         return;
-    //     }
+     if (p_orig.x < boxmin.x || p_orig.y < boxmin.y || p_orig.z < boxmin.z ||
+         p_orig.x > boxmax.x || p_orig.y > boxmax.y || p_orig.z > boxmax.z) {
+             gl_Position = vec4(0, 0, 0, 1);
+             return;
+         }
 
     // Transform point by projecting
     vec4 p_hom = projmatrix * vec4(p_orig, 1);

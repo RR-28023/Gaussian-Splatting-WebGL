@@ -83,6 +83,7 @@ function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
     gl.linkProgram(program)
 
     const success = gl.getProgramParameter(program, gl.LINK_STATUS)
+
     if (success) return program
 
     console.log(gl.getProgramInfoLog(program))
