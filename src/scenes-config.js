@@ -42,9 +42,19 @@ const defaultCameraParameters = {
     min_phi: 2.0,
     min_radius: 3.5,
   },
-  "dynamic_experiment_5": {
+  dynamic_experiment_5: {
     up: [0.004, 0.002, -1.0],
     target: [0.094, 0.574, 0.895],
+    defaultCameraMode: "orbit",
+    size: "?",
+    camera: [4.1, 2.0, 7], //[theta, phi, radius],
+    min_phi: 1.0,
+    max_phi: 2.5,
+    min_radius: 1.0,
+  },
+  dynamic_colmap_pablo: {
+    up: [-0.05, 0.961, 0.271],
+    target: [0.005, 0.52, 0.682],
     defaultCameraMode: "orbit",
     size: "?",
     camera: [4.1, 2.0, 7], //[theta, phi, radius],

@@ -163,39 +163,6 @@ async function loadNextFrame(frames_data, background_data) {
 
 }
 
-// async function loadFramesPly(frames_folder) {
-//     data = []
-//     let i=1
-//     let reader = []
-//     let contentLength = []
-//     while (true){
-//         response = await fetch(`models/${frames_folder}/frame_${i}.ply`)
-//         if (response.ok){
-//             contentLength.push(parseInt(response.headers.get('content-length')))
-//             reader.push(response.body.getReader())
-//             i++
-//         }
-//         else {
-//             break
-//         }
-//     }
-//     const n_frames = i
-
-//     // CARBALLO TODO : PODRÍA SER QUE ESTE FOR ESTÉ LASTRANDO TODO PORQUE CADA VEZ HACE DOS AWAITS
-
-//     for (let i = 0; i < reader.length; i++) {
-//         // Download .ply file and monitor the progress
-//         const content = await downloadPly(reader[i], contentLength[i])
-//         // Load and pre-process gaussian data from .ply file
-//         frame_ply_data = await loadPly(content.buffer)
-//         delete frame_ply_data.scales
-//         data.push(frame_ply_data)
-//         const progress = ((i + 1) /n_frames) * 100
-//         document.querySelector('#loading-bar').style.width = progress + '%'
-//         document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
-//     }
-//     return data
-// }
 
 async function loadFramesPly(frames_folder) {
   const data = [];
@@ -295,73 +262,6 @@ function requestRender(...params) {
 
     renderFrameRequest = requestAnimationFrame(() => render(...params))
 }
-
-// Render a frame on the canvas
-// function render(width, height, res) {
-//     // Update canvas size
-//     const resolution = res ?? settings.renderResolution
-//     const canvasWidth = width ?? Math.round(canvasSize[0] * resolution)
-//     const canvasHeight = height ?? Math.round(canvasSize[1] * resolution)
-
-//     if (gl.canvas.width != canvasWidth || gl.canvas.height != canvasHeight) {
-//         gl.canvas.width = canvasWidth
-//         gl.canvas.height = canvasHeight
-//     }
-
-//     // Setup viewport
-//     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-//     gl.clearColor(0, 0, 0, 0)
-//     gl.clear(gl.COLOR_BUFFER_BIT)
-//     gl.useProgram(program)
-
-//     // Update camera
-//     cam.update()
-
-//     // Original implementation parameters
-//     const W = gl.canvas.width
-//     const H = gl.canvas.height
-//     const tan_fovy = Math.tan(cam.fov_y * 0.5)
-//     const tan_fovx = tan_fovy * W / H
-//     const focal_y = H / (2 * tan_fovy)
-//     const focal_x = W / (2 * tan_fovx)
-
-//     gl.uniform1f(gl.getUniformLocation(program, 'W'), W)
-//     gl.uniform1f(gl.getUniformLocation(program, 'H'), H)
-//     gl.uniform1f(gl.getUniformLocation(program, 'focal_x'), focal_x)
-//     gl.uniform1f(gl.getUniformLocation(program, 'focal_y'), focal_y)
-//     gl.uniform1f(gl.getUniformLocation(program, 'tan_fovx'), tan_fovx)
-//     gl.uniform1f(gl.getUniformLocation(program, 'tan_fovy'), tan_fovy)
-//     gl.uniform1f(gl.getUniformLocation(program, 'scale_modifier'), settings.scalingModifier)
-//     gl.uniform3fv(gl.getUniformLocation(program, 'boxmin'), sceneMin)
-//     gl.uniform3fv(gl.getUniformLocation(program, 'boxmax'), sceneMax)
-//     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'projmatrix'), false, cam.vpm)
-//     gl.uniformMatrix4fv(gl.getUniformLocation(program, 'viewmatrix'), false, cam.vm)
-
-//     // Custom parameters
-//     gl.uniform1i(gl.getUniformLocation(program, 'show_depth_map'), settings.debugDepth)
-
-//     // Draw
-//     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, settings.maxGaussians)
-
-//     // Draw gizmo
-//     gizmoRenderer.render()
-
-//     renderFrameRequest = null
-
-//     // Progressively draw with higher resolution after the camera stops moving
-//     let nextResolution = Math.floor(resolution * 4 + 1) / 4
-//     if (nextResolution - resolution < 0.1) nextResolution += .25
-
-//     if (nextResolution <= 1 && !cam.needsWorkerUpdate && !isWorkerSorting) {
-//         const nextWidth = Math.round(canvasSize[0] * nextResolution)
-//         const nextHeight = Math.round(canvasSize[1] * nextResolution)
-
-//         if (renderTimeout != null)
-//             clearTimeout(renderTimeout)
-
-//         renderTimeout = setTimeout(() => requestRender(nextWidth, nextHeight, nextResolution), 200)
-//     }
-// }
 
 function render(width, height, res) {
   const resolution = res || settings.renderResolution;

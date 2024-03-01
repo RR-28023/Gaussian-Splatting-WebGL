@@ -1,5 +1,6 @@
 // Load all gaussian data from a point-cloud file
 // Original C++ implementation: https://gitlab.inria.fr/sibr/sibr_core/-/blob/gaussian_code_release_union/src/projects/gaussianviewer/renderer/GaussianView.cpp#L70
+
 async function loadPly(content) {
     // Read header
     const start = performance.now()
@@ -55,35 +56,30 @@ async function loadPly(content) {
     }
 
     // Extract all properties for a gaussian splat using the dataview
-    const extractSplatData = (splatID) => {
-        const position = fromDataView(splatID, 0, 3)
-        // const n = fromDataView(splatID, 3, 6) // Not used
-        
-        // f(x)=3x**2 +6x+
-        const H_last_idx = 6 + n_sh
-        const harmonic_raw = fromDataView(splatID, 6, H_last_idx)
-        const H_END = 6 + NUM_PROPS - 14 // 48 // Offset of the last harmonic coefficient
-        
-        // Need to re-order harmonic_raw[3:] (see the original paper's python implementation of GaussianModel.load_ply)
-        const n_extra_features = (n_sh - 3) / 3
-        const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]]
-        for (let i = 0; i < n_extra_features; i++) {
-            harmonic.push(harmonic_raw[3 + i])
-            harmonic.push(harmonic_raw[3 + i + n_extra_features])
-            harmonic.push(harmonic_raw[3 + i + n_extra_features * 2])
-        }
+    const extractSplatData = (splatID, n_sh, NUM_PROPS) => {
+      const position = fromDataView(splatID, 0, 3);
+      const H_last_idx = 6 + n_sh;
+      const harmonic_raw = fromDataView(splatID, 6, H_last_idx);
+      const H_END = 6 + NUM_PROPS - 14;
 
-        const opacity = fromDataView(splatID, H_END)
-        const scale = fromDataView(splatID, H_END + 1, H_END + 4)
-        const rotation = fromDataView(splatID, H_END + 4, H_END + 8)
-    
-        return { position, harmonic, opacity, scale, rotation }
-    }
+      const n_extra_features = (n_sh - 3) / 3;
+      const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]];
+
+      for (let i = 0; i < n_extra_features; i++) {
+        harmonic.push(harmonic_raw[3 + i], harmonic_raw[3 + i + n_extra_features], harmonic_raw[3 + i + n_extra_features * 2]);
+      }
+
+      const opacity = fromDataView(splatID, H_END);
+      const scale = fromDataView(splatID, H_END + 1, H_END + 4);
+      const rotation = fromDataView(splatID, H_END + 4, H_END + 8);
+
+      return { position, harmonic, opacity, scale, rotation };
+    };
 
     for (let i = 0; i < gaussianCount; i++) {
         // Extract data for current gaussian
-        let { position, harmonic, opacity, scale, rotation } = extractSplatData(i)
-        
+        let { position, harmonic, opacity, scale, rotation } = extractSplatData(i, n_sh, NUM_PROPS)
+
         // Update scene bounding box
         sceneMin = sceneMin.map((v, j) => Math.min(v, position[j]))
         sceneMax = sceneMax.map((v, j) => Math.max(v, position[j]))
@@ -114,7 +110,7 @@ async function loadPly(content) {
         // Degree 1: 4 harmonics needed (12 floats) per gaussian
         // Degree 2: 9 harmonics needed (27 floats) per gaussian
         // Degree 3: 16 harmonics needed (48 floats) per gaussian
-        
+
         if (n_sh == 3) {
             const SH_C0 = 0.28209479177387814
             const color = [
@@ -140,7 +136,7 @@ async function loadPly(content) {
     }
 
     console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
-    
+
     return { positions, opacities, colors, cov3Ds, scales, harmonics}
 }
 
@@ -190,7 +186,7 @@ function computeCov3D(scale, mod, rot) {
 
 // Download a .ply file from a ReadableStream chunk by chunk and monitor the progress
 async function downloadPly(reader, contentLength) {
-    return new Promise(async (resolve, reject) => {        
+    return new Promise(async (resolve, reject) => {
         const buffer = new Uint8Array(contentLength)
         let downloadedBytes = 0
 
