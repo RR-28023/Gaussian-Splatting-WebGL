@@ -17,18 +17,18 @@ let camController = {
 function initGUI() {
     const gui = new lil.GUI({title: 'Settings'})
 
-    const sceneNames = Object.entries(defaultCameraParameters).map(([name,]) => `${name}`)
+    const sceneNames = Object.entries(modelsList).map(([name,]) => `${name}`)
     const backNames = ['None', 'living room']
     settings.scene = sceneNames[0]
     settings.back = backNames[0]
     gui.add(settings, 'scene', sceneNames).name('Scene').listen().onChange((scene) => loadScene(scene, settings.back))
-    
+
     gui.add(settings, 'back', backNames).name('Background').listen().onChange((back) => loadScene(settings.scene, back))
-    
+
     gui.add(settings, 'renderResolution', 0.1, 1, 0.01).name('Preview Resolution')
 
     maxGaussianController = gui.add(settings, 'maxGaussians', 1, settings.maxGaussians, 1).name('Max Gaussians')
-       .onChange(() => {
+        .onChange(() => {
             cam.needsWorkerUpdate = true
             cam.updateWorker()
         })
@@ -45,31 +45,31 @@ function initGUI() {
     otherFolder.add(settings, 'sortTime').name('Sort Time').disable().listen()
 
     otherFolder.addColor(settings, 'bgColor').name('Background Color')
-       .onChange(value => {
+        .onChange(value => {
         document.body.style.backgroundColor = value
         requestRender()
     })
     otherFolder.add(settings, 'speed', 0.01, 2, 0.01).name('Camera Speed')
 
     otherFolder.add(settings, 'fov', 30, 110, 1).name('FOV')
-       .onChange(value => {
+        .onChange(value => {
         cam.fov_y = value * Math.PI / 180
         requestRender()
     })
 
     otherFolder.add(settings, 'debugDepth').name('Show Depth Map')
-       .onChange(() => requestRender())
+        .onChange(() => requestRender())
 
     // Add option to chose spherical harmonics degree to use, must be between 0 and 3
     // otherFolder.add(settings, 'shDegree', 0, 3, 1).name('SH Degree')
-    //    .onChange(() => loadScene({ default_file: settings.scene }))    
+    //    .onChange(() => loadScene({ default_file: settings.scene }))
 
     // Camera calibration folder
     addCameraCalibrationFolder(gui)
 
     // Camera controls folder
     addControlsFolder(gui)
-    
+
     // Github panel
     addIGZLink(gui)
 }
@@ -126,7 +126,7 @@ function addCameraCalibrationFolder(gui) {
 function addControlsFolder(gui) {
     const controlsFolder = gui.addFolder('Controls')
     controlsFolder.add(settings, 'freeFly').name('Free Flying').listen()
-       .onChange(value => {
+        .onChange(value => {
             cam.freeFly = value
             requestRender()
         })
@@ -161,7 +161,7 @@ function addIGZLink(gui) {
     igzElm.style.alignItems = 'center'
     igzElm.style.borderTop = '1px solid #424242'
     igzElm.style.padding = '4px 0'
-    
+
     const igzLink = document.createElement('p')
     igzLink.style.color = 'white'
     // igzLink.href = "https://intelygenz.com/";

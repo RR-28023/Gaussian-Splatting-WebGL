@@ -70,7 +70,7 @@ class Camera {
             this.phi = Math.min(this.max_phi, this.phi)
             this.phi = Math.max(this.min_phi, this.phi)
             // Print phi and theta values to console, rounded to the third decimal
-            console.log(`phi: ${this.phi.toFixed(2)}, theta: ${this.theta.toFixed(2)}, up: [${this.up[0].toFixed(3)}, ${this.up[1].toFixed(3)}, ${this.up[2].toFixed(3)}]`);
+            // console.log(`phi: ${this.phi.toFixed(2)}, theta: ${this.theta.toFixed(2)}, up: [${this.up[0].toFixed(3)}, ${this.up[1].toFixed(3)}, ${this.up[2].toFixed(3)}]`);
             this.isDragging = true
 
             requestRender()

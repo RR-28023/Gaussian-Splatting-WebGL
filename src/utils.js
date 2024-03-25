@@ -85,7 +85,7 @@ function createProgram(gl, vertexShaderSource, fragmentShaderSource) {
     const success = gl.getProgramParameter(program, gl.LINK_STATUS)
     if (success) return program
 
-    console.log(gl.getProgramInfoLog(program))
+    // console.log(gl.getProgramInfoLog(program))
     gl.deleteProgram(program)
 }
 
@@ -99,7 +99,7 @@ function createShader(gl, type, source) {
 
     if (success) return shader
 
-    console.log(gl.getShaderInfoLog(shader))
+    // console.log(gl.getShaderInfoLog(shader))
     gl.deleteShader(shader)
 }
 

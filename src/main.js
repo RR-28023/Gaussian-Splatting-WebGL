@@ -40,13 +40,14 @@ function sleep(ms) {
 }
 
 function showLoading() {
-    console.log("Show Loading")
+    // console.log("Show Loading")
     document.querySelector('#loading-container').style.opacity = "1"
 }
 
 function hideLoading() {
-  console.log("Hide Loading");
-  document.querySelector("#loading-container").style.opacity = "0";
+    // console.log("Hide Loading");
+    document.querySelector("#canvas").style.opacity = "1";
+    document.querySelector("#loading-container").style.opacity = "0";
 }
 
 
@@ -109,7 +110,10 @@ async function main() {
 
 async function loadScene(scene_name, back_name) {
     // Instantiate the camera
-    cam = new Camera(defaultCameraParameters[scene_name])
+    const CameraParameters = await fetch(`models/${scene_name}/${scene_name}.json`)
+    const defaultCameraParameters = await CameraParameters.json()
+
+    cam = new Camera(defaultCameraParameters)
     cam.disableMovement = true
     var back_data = null
     if (back_name != 'None') {
@@ -147,7 +151,7 @@ async function sendGaussianDataToWorker(scene_data, background_data) {
         data_to_send.opacities = data_to_send.opacities.concat(background_data.opacities)
         data_to_send.cov3Ds = data_to_send.cov3Ds.concat(background_data.cov3Ds)
         const appendTime = `${((performance.now() - start)/1000).toFixed(3)}s`
-        console.log(`[Frame loader] Appended background data in ${appendTime}`)
+        // console.log(`[Frame loader] Appended background data in ${appendTime}`)
     }
     settings.maxGaussians = gaussianCount
     worker.postMessage({gaussians: { ...data_to_send, count: gaussianCount }})
@@ -159,7 +163,7 @@ async function loadNextFrame(frames_data, background_data) {
 
     // Send gaussian data to the worker
     gaussianCount = frames_data[window.frame_idx].positions.length / 3
-    console.log(`Sending frame ${window.frame_idx} to worker`)
+    // console.log(`Sending frame ${window.frame_idx} to worker`)
     await sendGaussianDataToWorker(frames_data[window.frame_idx], background_data)
     // Append the back data to the data elements if it exists
     cam.update(is_dynamic=true)
@@ -227,7 +231,7 @@ async function loadStaticScene(scene_name, background_data) {
     // gl.clear(gl.COLOR_BUFFER_BIT)
     // document.querySelector('#loading-container').style.opacity = 1
     showLoading()
-    let response = await fetch(`models/${scene_name}.ply`)
+    let response = await fetch(`models/${scene_name}/${scene_name}.ply`);
 
     if (response.ok) {
         contentLength = parseInt(response.headers.get('content-length'))
@@ -247,7 +251,7 @@ async function loadStaticScene(scene_name, background_data) {
     delete data.scales
 
     // Send gaussian data to the worker
-    console.log(`Sending static gaussian data to worker`)
+    // console.log(`Sending static gaussian data to worker`)
     await sendGaussianDataToWorker(data, background_data)
     document.body.style.backgroundColor = settings.bgColor
     cam.update(is_dynamic=false)
@@ -353,7 +357,7 @@ function getGravityCenter(data) {
         sumScale += avg_scale
     }
     let mean_pos = [sumX / sumScale, sumY / sumScale, sumZ / sumScale]
-    console.log(`Gravity center at [${mean_pos[0].toFixed(3)},${mean_pos[1].toFixed(3)},${mean_pos[2].toFixed(3)}]`)
+    // console.log(`Gravity center at [${mean_pos[0].toFixed(3)},${mean_pos[1].toFixed(3)},${mean_pos[2].toFixed(3)}]`)
 }
 
 

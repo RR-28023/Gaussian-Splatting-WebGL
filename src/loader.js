@@ -139,7 +139,7 @@ async function loadPly(content) {
         positions.push(...position)
     }
 
-    console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
+    // console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
     
     return { positions, opacities, colors, cov3Ds, scales, harmonics}
 }
