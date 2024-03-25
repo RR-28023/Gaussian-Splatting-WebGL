@@ -119,20 +119,22 @@ async function loadScene(scene_name, back_name) {
     if (back_name != 'None') {
         var back_data = await loadBackgroundPly(back_name)
     }
-    if (scene_name.includes('dynamic')) {
-        // Load the background PLY data
-        const frames_data = await loadFramesPly(scene_name)
-        // Load the first frame
-        window.frame_idx = 0
-        loadNextFrame(frames_data, back_data)
-        // Wait 3 seconds for the first frame to be loaded before starting the interval
-        await sleep(3000)
-        stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
-        //await load_next_frame(frames_data, back_data)
-    }
-    else {
+    // if (scene_name.includes('dynamic')) {
+    if (defaultCameraParameters.isDynamic) {
+      console.log("Loading Dynamic Scene");
+      // Load the background PLY data
+      const frames_data = await loadFramesPly(scene_name);
+      // Load the first frame
+      window.frame_idx = 0;
+      loadNextFrame(frames_data, back_data);
+      // Wait 3 seconds for the first frame to be loaded before starting the interval
+      await sleep(3000);
+      stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
+      //await load_next_frame(frames_data, back_data)
+    } else {
         // Load the a static scene
-        await loadStaticScene(scene_name, back_data)
+        console.log("Loading Static Scene");
+        await loadStaticScene(scene_name, back_data);
     }
     cam.disableMovement = false
 
@@ -180,6 +182,7 @@ async function loadNextFrame(frames_data, background_data) {
 }
 
 async function loadFramesPly(frames_folder) {
+    console.log("Loading Frames")
     showLoading();
     data = []
     let i=1
