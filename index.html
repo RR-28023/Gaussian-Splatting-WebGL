@@ -51,19 +51,20 @@
 				height: 100%;
 				padding: 0 80px;
 				box-sizing: border-box;
-				color: white;
+				color: rgb(255, 255, 255);
+				font-size: 22px;
 				transition: all 0.25s ease-in-out;
 				pointer-events: none;
 			}
 
 			#loading-text {
 				margin: 0 auto;
+				margin-bottom: 50px;
 			}
 
 			#loading-bar {
-				width: 0%;
 				height: 15px;
-				background-color: white;
+				background-color: rgb(255, 255, 255);
 				margin: 40px 0;
 			}
 
@@ -75,6 +76,39 @@
 			.ctrl-key {
 				color: orange;
 			}
+			.loader {
+				width: 52px;
+				height: 52px;
+				border-radius: 50%;
+				margin: 0 auto;
+				display: inline-block;
+				border-top: 4px solid #FFF;
+				border-right: 4px solid transparent;
+				box-sizing: border-box;
+				animation: rotation 1s linear infinite;
+				margin-bottom: 50px;
+			}
+			.loader::after {
+				content: '';
+				box-sizing: border-box;
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 48px;
+				height: 48px;
+				border-radius: 50%;
+				border-left: 4px solid #160a60;
+				border-bottom: 4px solid transparent;
+				animation: rotation 0.5s linear infinite reverse;
+			}
+			@keyframes rotation {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			} 
 		</style>
 	</head>
 	<body>
@@ -89,11 +123,12 @@
 
 
 		<!-- Loading bar -->
-		<div id="loading-container">
+		<div id="loading-container" style="opacity: 1;">
 			<p id="loading-text">
-				Downloading 3D scene...
+				Loading 3D model
 			</p>
-			<div id="loading-bar"></div>
+			<span class="loader"></span>
+			<!-- <div id="loading-bar" style="width: 0%;"></div> -->
 			<img id="controls" src="controls.jpg">
 		</div>
 	</body>

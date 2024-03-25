@@ -22,7 +22,7 @@ async function loadPly(content) {
     }
     gaussianCount = parseInt(match[1])
 
-    document.querySelector('#loading-text').textContent = `Success. Initializing ${gaussianCount} gaussians...`
+    // document.querySelector('#loading-text').textContent = `Success. Initializing ${gaussianCount} gaussians...`
 
     // Create arrays for gaussian properties
     const positions = []
