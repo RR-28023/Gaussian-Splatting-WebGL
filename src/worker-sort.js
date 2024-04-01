@@ -10,7 +10,7 @@ onmessage = function(event) {
 
         depthIndex = new Uint32Array(gaussians.count)
 
-        console.log(`[Worker] Received ${gaussians.count} gaussians`)
+        // console.log(`[Worker] Received ${gaussians.count} gaussians`)
 
         data.positions = new Float32Array(gaussians.count * 3)
         data.opacities = new Float32Array(gaussians.count)
@@ -62,7 +62,7 @@ onmessage = function(event) {
         }
 
         const sortTime = `${((performance.now() - start)/1000).toFixed(3)}s`
-        console.log(`[Worker] Sorted ${gaussians.count} gaussians in ${sortTime}. Algorithm: ${sortingAlgorithm}`)
+        // console.log(`[Worker] Sorted ${gaussians.count} gaussians in ${sortTime}. Algorithm: ${sortingAlgorithm}`)
         postMessage({
             data, sortTime,
         })

@@ -8,13 +8,14 @@
 		<script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18"></script>
 
 		<!-- Scripts -->
+		<script src="models/models.js"></script>
 		<script src="src/utils.js"></script>
 		<script src="src/gui.js"></script>
 		<script src="src/gizmo.js"></script>
 		<script src="src/camera.js"></script>
 		<script src="src/loader.js"></script>
 		<script src="src/main.js"></script>
-		<script src="src/scenes-config.js"></script>
+		<script src="src/Functions/mainFunctions.js"></script>
 
 		<!-- Style -->
 		<style>
@@ -50,7 +51,8 @@
 				height: 100%;
 				padding: 0 80px;
 				box-sizing: border-box;
-				color: white;
+				color: rgb(255, 255, 255);
+				font-size: 22px;
 				transition: all 0.25s ease-in-out;
 				pointer-events: none;
 			}
@@ -60,19 +62,51 @@
 			}
 
 			#loading-bar {
-				width: 0%;
 				height: 15px;
-				background-color: white;
+				background-color: rgb(255, 255, 255);
 				margin: 40px 0;
 			}
 
-			#controls { 
-				width: 15%; 
-				margin: 0 auto; 
+			#controls {
+				width: 15%;
+				margin: 0 auto;
 			}
 
 			.ctrl-key {
 				color: orange;
+			}
+			.loader {
+				width: 52px;
+				height: 52px;
+				border-radius: 50%;
+				margin: 0 auto;
+				display: inline-block;
+				border-top: 4px solid #FFF;
+				border-right: 4px solid transparent;
+				box-sizing: border-box;
+				animation: rotation 1s linear infinite;
+				margin-bottom: 50px;
+			}
+			.loader::after {
+				content: '';
+				box-sizing: border-box;
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 48px;
+				height: 48px;
+				border-radius: 50%;
+				border-left: 4px solid #160a60;
+				border-bottom: 4px solid transparent;
+				animation: rotation 0.5s linear infinite reverse;
+			}
+			@keyframes rotation {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
 			}
 		</style>
 	</head>
@@ -88,11 +122,15 @@
 
 
 		<!-- Loading bar -->
-		<div id="loading-container">
+		<div id="loading-container" style="opacity: 1;">
 			<p id="loading-text">
-				Downloading 3D scene...
+				Loading 3D Scene...
 			</p>
-			<div id="loading-bar"></div>
+			<p id="loading-text" style="font-size: 15px; margin-top: 10px; margin-bottom: 50px;">
+				This may take a while, please be patient.
+			</p>
+			<span class="loader"></span>
+			<!-- <div id="loading-bar" style="width: 0%;"></div> -->
 			<img id="controls" src="controls.jpg">
 		</div>
 	</body>
