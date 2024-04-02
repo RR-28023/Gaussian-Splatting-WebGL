@@ -8,30 +8,31 @@ async function loadPly(content) {
     const [ header ] = contentStart.split('end_header')
 
     // Get number of gaussians
-    const regex = /element vertex (\d+)/
-    const match = header.match(regex)
+    const match = header.match(/element vertex (\d+)/)
+    const gaussianCount = parseInt(match[1])
+
+    // Check if the .ply is an IGZ avatar
+    const match_avatar = header.match(/igz_avatar/)
+    let isAvatar;
+    if (match_avatar != null) {
+        isAvatar = true
+    }
+    else {
+        isAvatar = false
+    }
 
     // Get number of SH coefficients (the model may have been trained with a lower SH degree)
-    const regex_sh = /f_rest_(\d+)/g
-    const match_sh = header.match(regex_sh)
+    const match_sh = header.match(/f_rest_(\d+)/g)
     if (match_sh == null) {
         n_sh = 3
     }
     else {
         n_sh = 3 + match_sh.length
     }
-    gaussianCount = parseInt(match[1])
 
     // document.querySelector('#loading-text').textContent = `Success. Initializing ${gaussianCount} gaussians...`
+    // console.log(`.ply file found, initializing ${gaussianCount.toLocaleString()} gaussians...`);
 
-    // Create arrays for gaussian properties
-    const positions = []
-    const opacities = []
-    const rotations = []
-    const scales = []
-    const harmonics = []
-    const colors = []
-    const cov3Ds = []
 
     // Scene bouding box
     sceneMin = new Array(3).fill(Infinity)
@@ -42,11 +43,15 @@ async function loadPly(content) {
     
     // Helpers
     const sigmoid = (m1) => 1 / (1 + Math.exp(-m1))
-    const NUM_PROPS = 14 + n_sh // If the gaussian has been trained with a lower SH degree, this number will be lower
-
+    if (isAvatar) {
+        NUM_PROPS = 7
+    }
+    else {
+        NUM_PROPS = 14 + n_sh // If the gaussian has been trained with a lower SH degree, this number will be lower
+    }
     // Get a slice of the dataview relative to a splat index
     const fromDataView = (splatID, start, end) => {
-        const startOffset = headerEnd + splatID * NUM_PROPS * 4 + start * 4
+        const startOffset = headerEnd + splatID * NUM_PROPS * 4 + start * 4 // by 4 because each float is 4 bytes
 
         if (end == null) 
             return view.getFloat32(startOffset, true)
@@ -80,42 +85,110 @@ async function loadPly(content) {
         return { position, harmonic, opacity, scale, rotation }
     }
 
-    for (let i = 0; i < gaussianCount; i++) {
-        // Extract data for current gaussian
-        let { position, harmonic, opacity, scale, rotation } = extractSplatData(i)
+    const extractSplatDataIsAvatar = (splatID) => {
+        const position = fromDataView(splatID, 0, 3)        
+        const harmonic_raw = fromDataView(splatID, 3, 6)
         
-        // Update scene bounding box
-        sceneMin = sceneMin.map((v, j) => Math.min(v, position[j]))
-        sceneMax = sceneMax.map((v, j) => Math.max(v, position[j]))
+        // Need to re-order harmonic_raw[3:] (see the original paper's python implementation of GaussianModel.load_ply)
+        const harmonic = [harmonic_raw[0], harmonic_raw[1], harmonic_raw[2]]
+        const scale = fromDataView(splatID, 6, 7)
+    
+        return { position, harmonic, scale}
+    }
 
-        // Normalize quaternion
-        let length2 = 0
+    const extractDataAllSplats = (gaussianCount) => {
+    
+        // Create arrays for gaussian properties
+        const positions = []
+        const opacities = []
+        const scales = []
+        const harmonics = []
+        const colors = []
+        const cov3Ds = []
+    
+        for (let i = 0; i < gaussianCount; i++) {
+            // Extract data for current gaussian
+            let { position, harmonic, opacity, scale, rotation } = extractSplatData(i)
+            
+            // Update scene bounding box
+            sceneMin = sceneMin.map((v, j) => Math.min(v, position[j]))
+            sceneMax = sceneMax.map((v, j) => Math.max(v, position[j]))
 
-        for (let j = 0; j < 4; j++)
-            length2 += rotation[j] * rotation[j]
+            // Normalize quaternion
+            let length2 = 0
 
-        const length = Math.sqrt(length2)
+            for (let j = 0; j < 4; j++)
+                length2 += rotation[j] * rotation[j]
 
-        rotation = rotation.map(v => v / length)  
+            const length = Math.sqrt(length2)
 
-        // Exponentiate scale
-        scale = scale.map(v => Math.exp(v))
+            rotation = rotation.map(v => v / length)  
 
-        // Activate alpha
-        opacity = sigmoid(opacity)
-        opacities.push(opacity)
+            // Exponentiate scale
+            scale = scale.map(v => Math.exp(v))
 
-        // (Webgl-specific) Equivalent to computeColorFromSH() with degree 0:
-        // Use the first spherical harmonic to pre-compute the color.
-        // This allow to avoid sending harmonics to the web worker or GPU,
-        // but removes view-dependent lighting effects like reflections.
-        // If we were to use a degree > 0, we would need to recompute the color 
-        // each time the camera moves, and send many more harmonics to the worker:
-        // Degree 1: 4 harmonics needed (12 floats) per gaussian
-        // Degree 2: 9 harmonics needed (27 floats) per gaussian
-        // Degree 3: 16 harmonics needed (48 floats) per gaussian
+            // Activate alpha
+            opacity = sigmoid(opacity)
+            opacities.push(opacity)
+
+            // (Webgl-specific) Equivalent to computeColorFromSH() with degree 0:
+            // Use the first spherical harmonic to pre-compute the color.
+            // This allow to avoid sending harmonics to the web worker or GPU,
+            // but removes view-dependent lighting effects like reflections.
+            // If we were to use a degree > 0, we would need to recompute the color 
+            // each time the camera moves, and send many more harmonics to the worker:
+            // Degree 1: 4 harmonics needed (12 floats) per gaussian
+            // Degree 2: 9 harmonics needed (27 floats) per gaussian
+            // Degree 3: 16 harmonics needed (48 floats) per gaussian
+            
+            if (n_sh == 3) {
+                const SH_C0 = 0.28209479177387814
+                const color = [
+                    0.5 + SH_C0 * harmonic[0],
+                    0.5 + SH_C0 * harmonic[1],
+                    0.5 + SH_C0 * harmonic[2]
+                ]
+                colors.push(...color)
+            }
+            else {
+                harmonics.push(...harmonic) 
+            }
+            // (Webgl-specific) Pre-compute the 3D covariance matrix from
+            // the rotation and scale in order to avoid recomputing it at each frame.
+            // This also allow to avoid sending rotations and scales to the web worker or GPU.
+            const cov3D = computeCov3D(scale, 1, rotation)
+            cov3Ds.push(...cov3D)
+            // rotations.push(...rotation)
+            scales.push(...scale)
+
+            positions.push(...position)
+        }
         
-        if (n_sh == 3) {
+        return {positions, opacities, colors, cov3Ds, scales, harmonics}
+    }
+
+    const extractDataAllSplatsAvatar = (gaussianCount) => {
+    
+        // Create arrays for gaussian properties
+        const positions = []
+        const scales = []
+        const colors = []
+    
+        for (let i = 0; i < gaussianCount; i++) {
+            // Extract data for current gaussian
+            let { position, harmonic, scale} = extractSplatDataIsAvatar(i)
+            
+            // Update scene bounding box
+            sceneMin = sceneMin.map((v, j) => Math.min(v, position[j]))
+            sceneMax = sceneMax.map((v, j) => Math.max(v, position[j]))
+
+            positions.push(...position)
+
+            // Exponentiate scale
+            scale = scale.map(v => Math.exp(v))
+            scales.push(...scale)
+
+
             const SH_C0 = 0.28209479177387814
             const color = [
                 0.5 + SH_C0 * harmonic[0],
@@ -123,25 +196,29 @@ async function loadPly(content) {
                 0.5 + SH_C0 * harmonic[2]
             ]
             colors.push(...color)
-        }
-        else {
-            harmonics.push(...harmonic) 
-        }
 
-        // (Webgl-specific) Pre-compute the 3D covariance matrix from
-        // the rotation and scale in order to avoid recomputing it at each frame.
-        // This also allow to avoid sending rotations and scales to the web worker or GPU.
-        const cov3D = computeCov3D(scale, 1, rotation)
-        cov3Ds.push(...cov3D)
-        // rotations.push(...rotation)
-        scales.push(...scale)
-
-        positions.push(...position)
+            // (Webgl-specific) Pre-compute the 3D covariance matrix from
+            // the rotation and scale in order to avoid recomputing it at each frame.
+            // This also allow to avoid sending rotations and scales to the web worker or GPU.
+            // const cov3D = computeCov3D(scale, 1, rotation)
+            // cov3Ds.push(...cov3D)
+            // rotations.push(...rotation)
+        }
+        
+        return {positions, colors, scales}
     }
+  
 
-    // console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
-    
-    return { positions, opacities, colors, cov3Ds, scales, harmonics}
+    if (isAvatar) {        
+        splatsData = extractDataAllSplatsAvatar(gaussianCount)
+        // console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
+        return splatsData     
+    }
+    else {
+        splatsData = extractDataAllSplats(gaussianCount)
+        // console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
+        return splatsData
+    }
 }
 
 

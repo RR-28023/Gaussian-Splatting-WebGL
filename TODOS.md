@@ -6,3 +6,5 @@
 6. Functionality to load more than .ply if it is in the same folder
 7. ✅ Add background color as a setting per scene (in the .jsons)
 8. ✅ Remove the "Background" setting and functionality
+9. Explore if we can reduce the time used in re-indexing the gaussians array 
+10. Migrate the repo to IGZ's org
