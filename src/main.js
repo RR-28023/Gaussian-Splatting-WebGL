@@ -199,14 +199,12 @@ async function loadFramesPly(frames_folder) {
             break
         }
     }
-    const n_frames = i
 
     for (let i = 0; i < reader.length; i++) {
         // Download .ply file and monitor the progress
         const content = await downloadPly(reader[i], contentLength[i])
         // Load and pre-process gaussian data from .ply file
         frame_ply_data = await loadPly(content.buffer)
-        delete frame_ply_data.scales
         data.push(frame_ply_data)
         // const progress = ((i + 1) /n_frames) * 100
         // document.querySelector('#loading-bar').style.width = progress + '%'
