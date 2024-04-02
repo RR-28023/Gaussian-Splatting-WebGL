@@ -126,17 +126,18 @@ async function loadScene(scene_name, back_name) {
       const frames_data = await loadFramesPly(scene_name);
       // Load the first frame
       window.frame_idx = 0;
-      loadNextFrame(frames_data, back_data);
+      loadNextFrame(frames_data, back_data, CameraParameters.backgroundColorHEX);
       // Wait 3 seconds for the first frame to be loaded before starting the interval
       await sleep(3000);
-      stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
+      stopInterval = setInterval(() => loadNextFrame(frames_data, back_data, CameraParameters.backgroundColorHEX), 500);
       //await load_next_frame(frames_data, back_data)
     } else {
         // Load the a static scene
         console.log("Loading Static Scene");
-        await loadStaticScene(scene_name, back_data);
+        await loadStaticScene(scene_name, back_data, CameraParameters.backgroundColorHEX);
     }
     cam.disableMovement = false
+    document.body.style.backgroundColor = defaultCameraParameters.backgroundColorHEX;
 
 }
 
@@ -161,7 +162,7 @@ async function sendGaussianDataToWorker(scene_data, background_data) {
 }
 
 
-async function loadNextFrame(frames_data, background_data) {
+async function loadNextFrame(frames_data, background_data, backgroundColorHEX) {
 
     // Send gaussian data to the worker
     gaussianCount = frames_data[window.frame_idx].positions.length / 3
@@ -170,7 +171,7 @@ async function loadNextFrame(frames_data, background_data) {
     // Append the back data to the data elements if it exists
     cam.update(is_dynamic=true)
     document.getElementById('frameNumber').innerText = `Frame: ${window.frame_idx}`;
-    document.body.style.backgroundColor = settings.bgColor
+    document.body.style.backgroundColor = backgroundColorHEX;
     window.frame_idx += 1
     if (window.frame_idx >= frames_data.length) window.frame_idx = 0
 
@@ -194,6 +195,7 @@ async function loadFramesPly(frames_folder) {
             contentLength.push(parseInt(response.headers.get('content-length')))
             reader.push(response.body.getReader())
             i++
+            console.log("Frame", i, "loaded")
         }
         else {
             break
@@ -211,6 +213,7 @@ async function loadFramesPly(frames_folder) {
         // const progress = ((i + 1) /n_frames) * 100
         // document.querySelector('#loading-bar').style.width = progress + '%'
         // document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
+        console.log("Processing Frame", i, "/", n_frames);
     }
     return data
 }
@@ -229,7 +232,7 @@ async function loadBackgroundPly(back_name) {
 }
 
 // Load a .ply scene specified as a name (URL fetch) or local file
-async function loadStaticScene(scene_name, background_data) {
+async function loadStaticScene(scene_name, background_data, backgroundColorHEX) {
     // gl.clearColor(0, 0, 0, 0)
     // gl.clear(gl.COLOR_BUFFER_BIT)
     // document.querySelector('#loading-container').style.opacity = 1
@@ -256,7 +259,7 @@ async function loadStaticScene(scene_name, background_data) {
     // Send gaussian data to the worker
     // console.log(`Sending static gaussian data to worker`)
     await sendGaussianDataToWorker(data, background_data)
-    document.body.style.backgroundColor = settings.bgColor
+    document.body.style.backgroundColor = backgroundColorHEX;
     cam.update(is_dynamic=false)
 
 

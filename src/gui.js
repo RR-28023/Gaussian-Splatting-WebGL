@@ -23,7 +23,7 @@ function initGUI() {
     settings.back = backNames[0]
     gui.add(settings, 'scene', sceneNames).name('Scene').listen().onChange((scene) => loadScene(scene, settings.back))
 
-    gui.add(settings, 'back', backNames).name('Background').listen().onChange((back) => loadScene(settings.scene, back))
+    // gui.add(settings, 'back', backNames).name('Background').listen().onChange((back) => loadScene(settings.scene, back))
 
     gui.add(settings, 'renderResolution', 0.1, 1, 0.01).name('Preview Resolution')
 
@@ -38,37 +38,37 @@ function initGUI() {
 
 
     // Other settings
-    const otherFolder = gui.addFolder('Other Settings').close()
+    // const otherFolder = gui.addFolder('Other Settings').close()
 
-    otherFolder.add(settings, 'sortingAlgorithm', SORTING_ALGORITHMS).name('Sorting Algorithm')
+    // otherFolder.add(settings, 'sortingAlgorithm', SORTING_ALGORITHMS).name('Sorting Algorithm')
 
-    otherFolder.add(settings, 'sortTime').name('Sort Time').disable().listen()
+    // otherFolder.add(settings, 'sortTime').name('Sort Time').disable().listen()
 
-    otherFolder.addColor(settings, 'bgColor').name('Background Color')
-        .onChange(value => {
-        document.body.style.backgroundColor = value
-        requestRender()
-    })
-    otherFolder.add(settings, 'speed', 0.01, 2, 0.01).name('Camera Speed')
+    // otherFolder.addColor(settings, 'bgColor').name('Background Color')
+    //     .onChange(value => {
+    //     document.body.style.backgroundColor = value
+    //     requestRender()
+    // })
+    // otherFolder.add(settings, 'speed', 0.01, 2, 0.01).name('Camera Speed')
 
-    otherFolder.add(settings, 'fov', 30, 110, 1).name('FOV')
-        .onChange(value => {
-        cam.fov_y = value * Math.PI / 180
-        requestRender()
-    })
+    // otherFolder.add(settings, 'fov', 30, 110, 1).name('FOV')
+    //     .onChange(value => {
+    //     cam.fov_y = value * Math.PI / 180
+    //     requestRender()
+    // })
 
-    otherFolder.add(settings, 'debugDepth').name('Show Depth Map')
-        .onChange(() => requestRender())
+    // otherFolder.add(settings, 'debugDepth').name('Show Depth Map')
+    //     .onChange(() => requestRender())
 
     // Add option to chose spherical harmonics degree to use, must be between 0 and 3
     // otherFolder.add(settings, 'shDegree', 0, 3, 1).name('SH Degree')
     //    .onChange(() => loadScene({ default_file: settings.scene }))
 
     // Camera calibration folder
-    addCameraCalibrationFolder(gui)
+    // addCameraCalibrationFolder(gui)
 
     // Camera controls folder
-    addControlsFolder(gui)
+    // addControlsFolder(gui)
 
     // Github panel
     addIGZLink(gui)
