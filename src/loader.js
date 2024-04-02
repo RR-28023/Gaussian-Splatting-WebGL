@@ -31,7 +31,7 @@ async function loadPly(content) {
     }
 
     // document.querySelector('#loading-text').textContent = `Success. Initializing ${gaussianCount} gaussians...`
-    console.log(`.ply file found, initializing ${gaussianCount.toLocaleString()} gaussians...`);
+    // console.log(`.ply file found, initializing ${gaussianCount.toLocaleString()} gaussians...`);
 
 
     // Scene bouding box
@@ -153,7 +153,6 @@ async function loadPly(content) {
             else {
                 harmonics.push(...harmonic) 
             }
-
             // (Webgl-specific) Pre-compute the 3D covariance matrix from
             // the rotation and scale in order to avoid recomputing it at each frame.
             // This also allow to avoid sending rotations and scales to the web worker or GPU.
@@ -212,12 +211,12 @@ async function loadPly(content) {
 
     if (isAvatar) {        
         splatsData = extractDataAllSplatsAvatar(gaussianCount)
-        console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
+        // console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
         return splatsData     
     }
     else {
         splatsData = extractDataAllSplats(gaussianCount)
-        console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
+        // console.log(`Loaded ${gaussianCount} gaussians in ${((performance.now() - start)/1000).toFixed(3)}s`)
         return splatsData
     }
 }

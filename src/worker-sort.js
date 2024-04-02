@@ -1,10 +1,12 @@
 const data = {}
 let gaussians
 let depthIndex
+let isAvatar
 
 onmessage = function(event) {
     // Init web worker event
     if (event.data.gaussians) {
+        // If here, we have received a new static scene or a new frame in a dynamic video
         gaussians = event.data.gaussians
         gaussians.totalCount = gaussians.count
 
@@ -13,24 +15,40 @@ onmessage = function(event) {
         // console.log(`[Worker] Received ${gaussians.count} gaussians`)
 
         data.positions = new Float32Array(gaussians.count * 3)
+        data.colors = new Float32Array(gaussians.count * 3)
         data.opacities = new Float32Array(gaussians.count)
         data.cov3Da = new Float32Array(gaussians.count * 3)
-        data.cov3Db = new Float32Array(gaussians.count * 3)
-        data.colors = new Float32Array(gaussians.count * 3)
+        data.cov3Db = new Float32Array(gaussians.count * 3)    
+
+        // If no opacities are provided, we can infer that the data is for an avatar
+        // this is a bit hacky, I guess ideally we would pass a variable declaring whether
+        // the data is for an avatar or not
+        if (!gaussians.opacities) {
+            isAvatar = true
+        }
+        else {
+            isAvatar = false
+        } 
+    
     }
     // Sort gaussians event
     else if (event.data.viewMatrix) {
         const { viewMatrix, maxGaussians, sortingAlgorithm } = event.data
 
-        const start = performance.now()
-
+        
         gaussians.count = Math.min(gaussians.totalCount, maxGaussians)
-
+        
         // Sort the gaussians!
+        let start = performance.now()
         sortGaussiansByDepth(depthIndex, gaussians, viewMatrix, sortingAlgorithm)
+        const sortTime = `${((performance.now() - start)/1000).toFixed(3)}s`
+        console.log(`[Worker] Sorted ${gaussians.count} gaussians in ${sortTime}. Algorithm: ${sortingAlgorithm}`)
 
         n_sh_coeffs = event.data.n_sh_coeffs
-        // Update arrays containing the data
+        
+        start = performance.now()
+
+        // Update arrays containing the data        
         for (let j = 0; j < gaussians.count; j++) {
             const i = depthIndex[j]
             if (n_sh_coeffs > 3) {                
@@ -48,21 +66,33 @@ onmessage = function(event) {
             data.positions[j*3+1] = gaussians.positions[i*3+1]
             data.positions[j*3+2] = gaussians.positions[i*3+2]
 
-            data.opacities[j] = gaussians.opacities[i]
+            let cov3Ds;
+            if (isAvatar) {
+                data.opacities[j] = 1.0
+                scale = gaussians.scales[i]
+                // This is the upper triangle of teh Cov matrix when the scale is constant
+                // and the rotation is the identity
+                cov3Ds = new Float32Array([scale**2, 0, 0, 0, scale**2, 0, 0, 0, scale**2])
+            }
+            else {
+                data.opacities[j] = gaussians.opacities[i]
+                cov3Ds = gaussians.cov3Ds.slice(i*6, i*6+6)
+            }
 
             // Split the covariance matrix into two vec3
             // so they can be used as vertex shader attributes
-            data.cov3Da[j*3] = gaussians.cov3Ds[i*6]
-            data.cov3Da[j*3+1] = gaussians.cov3Ds[i*6+1]
-            data.cov3Da[j*3+2] = gaussians.cov3Ds[i*6+2]
+            data.cov3Da[j*3] = cov3Ds[0] //gaussians.cov3Ds[i*6]
+            data.cov3Da[j*3+1] = cov3Ds[1] //gaussians.cov3Ds[i*6+1]
+            data.cov3Da[j*3+2] = cov3Ds[2] //gaussians.cov3Ds[i*6+2]
 
-            data.cov3Db[j*3] = gaussians.cov3Ds[i*6+3]
-            data.cov3Db[j*3+1] = gaussians.cov3Ds[i*6+4]
-            data.cov3Db[j*3+2] = gaussians.cov3Ds[i*6+5]
+            data.cov3Db[j*3] = cov3Ds[3] //gaussians.cov3Ds[i*6+3]
+            data.cov3Db[j*3+1] = cov3Ds[4] //gaussians.cov3Ds[i*6+4]
+            data.cov3Db[j*3+2] = cov3Ds[5] //gaussians.cov3Ds[i*6+5]
         }
 
-        const sortTime = `${((performance.now() - start)/1000).toFixed(3)}s`
-        // console.log(`[Worker] Sorted ${gaussians.count} gaussians in ${sortTime}. Algorithm: ${sortingAlgorithm}`)
+        const reindexTime = `${((performance.now() - start)/1000).toFixed(3)}s`
+        console.log(`[Worker] Re-indexed ${gaussians.count} gaussians in ${reindexTime}. Algorithm: ${sortingAlgorithm}`)
+
         postMessage({
             data, sortTime,
         })

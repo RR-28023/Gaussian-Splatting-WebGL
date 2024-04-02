@@ -179,19 +179,20 @@ async function loadFramesPly(frames_folder) {
             contentLength.push(parseInt(response.headers.get('content-length')))
             reader.push(response.body.getReader())
             i++
-            console.log("Frame", i, "loaded")
         }
         else {
             break
         }
     }
-
+    let n_frames = reader.length    
     for (let i = 0; i < reader.length; i++) {
         // Download .ply file and monitor the progress
+        let start = performance.now()
         const content = await downloadPly(reader[i], contentLength[i])
         // Load and pre-process gaussian data from .ply file
-        frame_ply_data = await loadPly(content.buffer)
+        frame_ply_data = await loadPly(content.buffer)        
         data.push(frame_ply_data)
+        console.log(`Frame ${i}/${n_frames} loaded in ${((performance.now() - start)/1000).toFixed(3)}s`)
         // const progress = ((i + 1) /n_frames) * 100
         // document.querySelector('#loading-bar').style.width = progress + '%'
         // document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
@@ -224,7 +225,7 @@ async function loadStaticScene(scene_name, background_data, backgroundColorHEX) 
 
     // Print gravity center
     getGravityCenter(data)
-    delete data.scales
+    // delete data.scales
 
     // Send gaussian data to the worker
     // console.log(`Sending static gaussian data to worker`)
