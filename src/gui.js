@@ -65,10 +65,10 @@ function initGUI() {
     //    .onChange(() => loadScene({ default_file: settings.scene }))
 
     // Camera calibration folder
-    // addCameraCalibrationFolder(gui)
+    addCameraCalibrationFolder(gui)
 
     // Camera controls folder
-    // addControlsFolder(gui)
+    addControlsFolder(gui)
 
     // Github panel
     addIGZLink(gui)
@@ -124,12 +124,15 @@ function addCameraCalibrationFolder(gui) {
 }
 
 function addControlsFolder(gui) {
-    const controlsFolder = gui.addFolder('Controls')
-    controlsFolder.add(settings, 'freeFly').name('Free Flying').listen()
-        .onChange(value => {
-            cam.freeFly = value
-            requestRender()
-        })
+    const controlsFolder = gui.addFolder("Controls").close();
+    controlsFolder
+      .add(settings, "freeFly")
+      .name("Free Flying")
+      .listen()
+      .onChange((value) => {
+        cam.freeFly = value;
+        requestRender();
+      })
 
     // Free-fly text info
     const controlsHelp = document.createElement('div')
