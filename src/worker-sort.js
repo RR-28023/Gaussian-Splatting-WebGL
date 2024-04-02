@@ -72,7 +72,7 @@ onmessage = function(event) {
                 scale = gaussians.scales[i]
                 // This is the upper triangle of teh Cov matrix when the scale is constant
                 // and the rotation is the identity
-                cov3Ds = new Float32Array([scale**2, 0, 0, 0, scale**2, 0, 0, 0, scale**2])
+                cov3Ds = new Float32Array([scale**2, 0, 0, scale**2, 0, scale**2])
             }
             else {
                 data.opacities[j] = gaussians.opacities[i]
