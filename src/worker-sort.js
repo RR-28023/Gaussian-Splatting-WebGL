@@ -48,10 +48,10 @@ onmessage = function(event) {
         
         start = performance.now()
 
-        // Update arrays containing the data        
+        // Update arrays containing the data
         for (let j = 0; j < gaussians.count; j++) {
             const i = depthIndex[j]
-            if (n_sh_coeffs > 3) {                
+            if (n_sh_coeffs > 3) {
                 campos = { x: event.data.campos[0], y: event.data.campos[1], z: event.data.campos[2]}
                 colors = computeColorFromSH(i, n_sh_coeffs, gaussians.positions, campos, gaussians.harmonics)
             }
@@ -59,7 +59,7 @@ onmessage = function(event) {
                 colors = { x: gaussians.colors[i*3], y: gaussians.colors[i*3+1], z: gaussians.colors[i*3+2] }
             }
             data.colors[j*3] = colors.x
-            data.colors[j*3+1] = colors.y   
+            data.colors[j*3+1] = colors.y
             data.colors[j*3+2] = colors.z
 
             data.positions[j*3] = gaussians.positions[i*3]
