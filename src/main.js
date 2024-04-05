@@ -125,7 +125,7 @@ async function loadScene(scene_name, back_name) {
       loadNextFrame(frames_data, CameraParameters.backgroundColorHEX);
       // Wait 3 seconds for the first frame to be loaded before starting the interval
       await sleep(3000);
-      stopInterval = setInterval(() => loadNextFrame(frames_data, CameraParameters.backgroundColorHEX), 500);
+      setInterval(() => loadNextFrame(frames_data, CameraParameters.backgroundColorHEX), 400);
     } else {
         // Load the a static scene
         console.log("Loading Static Scene");
@@ -187,12 +187,13 @@ async function loadFramesPly(frames_folder) {
     let n_frames = reader.length    
     for (let i = 0; i < reader.length; i++) {
         // Download .ply file and monitor the progress
-        let start = performance.now()
+        // let start = performance.now()
         const content = await downloadPly(reader[i], contentLength[i])
         // Load and pre-process gaussian data from .ply file
-        frame_ply_data = await loadPly(content.buffer)        
+        frame_ply_data = await loadPly(content.buffer)
         data.push(frame_ply_data)
-        console.log(`Frame ${i}/${n_frames} loaded in ${((performance.now() - start)/1000).toFixed(3)}s`)
+        // console.log(`Frame ${i}/${n_frames} loaded in ${((performance.now() - start) / 1000).toFixed(3)}s`)
+        console.log(`Frame ${i}/${n_frames} loaded`);
         // const progress = ((i + 1) /n_frames) * 100
         // document.querySelector('#loading-bar').style.width = progress + '%'
         // document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
