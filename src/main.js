@@ -26,6 +26,7 @@ const settings = {
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',
+    renderSpeed: 500,
     // shDegree: 2,
     // maxShDegree: 3,
 
@@ -125,7 +126,11 @@ async function loadScene(scene_name, back_name) {
       loadNextFrame(frames_data, CameraParameters.backgroundColorHEX);
       // Wait 3 seconds for the first frame to be loaded before starting the interval
       await sleep(3000);
-      setInterval(() => loadNextFrame(frames_data, CameraParameters.backgroundColorHEX), 400);
+        function loadLoop() {
+            loadNextFrame(frames_data, CameraParameters.backgroundColorHEX, settings.renderSpeed);
+            setTimeout(loop, settings.renderSpeed);
+        }
+        loadLoop();
     } else {
         // Load the a static scene
         console.log("Loading Static Scene");
@@ -135,6 +140,7 @@ async function loadScene(scene_name, back_name) {
     document.body.style.backgroundColor = defaultCameraParameters.backgroundColorHEX;
 
 }
+
 
 async function sendGaussianDataToWorker(scene_data) {
 

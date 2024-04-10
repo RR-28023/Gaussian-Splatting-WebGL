@@ -26,6 +26,12 @@ function initGUI() {
     // gui.add(settings, 'back', backNames).name('Background').listen().onChange((back) => loadScene(settings.scene, back))
 
     gui.add(settings, 'renderResolution', 0.1, 1, 0.01).name('Preview Resolution')
+    gui
+      .add(settings, "renderSpeed", 1, 1000, 1)
+      .name("Render Speed (ms)")
+      .onChange(() => {
+        console.log("Render speed changed to: ", settings.renderSpeed);
+      });
 
     maxGaussianController = gui.add(settings, 'maxGaussians', 1, settings.maxGaussians, 1).name('Max Gaussians')
         .onChange(() => {
