@@ -1,48 +1,12 @@
 const defaultCameraParameters = {
-    'last': {
-        up: [0.050, 0.313, -0.909],
-        target: [0.086, 2.104, 1.882],
+    'torso': {
+        up: [-0.015, 0.903, 0.790],
+        target:  [-0.878, 1.406,-0.146], 
         defaultCameraMode: 'orbit',
         size: '?',
-        camera: [5, 1.87, 6], //[theta, phi, radius],
-        min_phi: 0,
-        min_radius: 3.5
-    },
-    'blue_car_8': {
-        up: [0.004, 0.831, 0.557],
-        target: [0.086, 2.104, 1.882],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [2.06, 2.1, 6], //[theta, phi, radius],
-        min_phi: 0,
-        min_radius: 3.5
-    },
-    'Hotwheel blue': {
-        up: [0.004, 0.831, 0.557],
-        target: [0.086, 2.104, 1.882],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [2.06, 2.1, 6], //[theta, phi, radius],
-        min_phi: 0,
-        min_radius: 3.5
-    },
-    'blue_car': {
-        up: [0.004, 0.831, 0.557],
-        target: [0.086, 2.104, 1.882],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [2.06, 2.1, 6], //[theta, phi, radius],
-        min_phi: 0,
-        min_radius: 3.5
-    },
-    'lancia hotwheel': {
-        up: [0.004, 0.831, 0.557],
-        target: [0.086, 2.104, 1.882],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [2.06, 2.1, 6], //[theta, phi, radius],
-        min_phi: 0,
-        min_radius: 3.5
+        camera: [1.20, 1.6, 5], //[theta, phi, radius],
+        min_phi: 1.55,
+        max_phi: 1.9
     },
     // 'torso.cleaned': {
     //     up: [-0.015, 0.903, 0.790],
@@ -69,78 +33,23 @@ const defaultCameraParameters = {
     //      camera: [4.9, 2.2, 3], //[theta, phi, radius],
     //      min_phi: 1.2
     // }, 
-    //     'lancia hotwheel': {
-    //         up: [0.004, 0.831, 0.557],
-    //         target:  [0.086,2.104,1.882], 
-    //         defaultCameraMode: 'orbit',
-    //         size: '?',
-    //         camera: [2.06, 2.1, 6], //[theta, phi, radius],
-    //         min_phi: 2.0,
-    //         min_radius: 3.5
-    //    },
-
-    'dynamic_experiment_5': {
-        up: [0.004, 0.002, -1.000],
-        target: [0.094, 0.574, 0.895],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [4.1, 2.0, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 1.0
-    },
-
-    'dynamic_colmap_pablo': {
-        up: [-0.050, 0.961, 0.271],
-        target: [0.005, 0.520, 0.682],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [4.1, 2.0, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 1.0
-    },
-    'dynamic_smpl_floor': {
-        up: [0.004, 0.002, 1.000],
-        target: [0.094, 0.574, 0.895],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [-1.49, 1.17, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 1.0
-    },
-    'dynamic_soccer_new': {
-        up: [-0.102, -0.054, -0.993],
-        target: [0.094, 0.574, 0.895],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [6.52, 1.65, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 1.0
-    },
-    'dynamic_soccer_no_back': {
-        up: [-0.102, -0.054, -0.993],
-        target: [0.094, 0.574, 0.895],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [6.52, 1.65, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 1.0
-    },
-    'dynamic_soccer': {
-        up: [-0.102, -0.054, -0.993],
-        target: [0.094, 0.574, 0.895],
-        defaultCameraMode: 'orbit',
-        size: '?',
-        camera: [6.52, 1.65, 7], //[theta, phi, radius],
-        min_phi: 1.0,
-        max_phi: 2.5,
-        min_radius: 1.0
-    },
-
+//     'lancia hotwheel': {
+//         up: [0.004, 0.831, 0.557],
+//         target:  [0.086,2.104,1.882], 
+//         defaultCameraMode: 'orbit',
+//         size: '?',
+//         camera: [2.06, 2.1, 6], //[theta, phi, radius],
+//         min_phi: 2.0,
+//         min_radius: 3.5
+//    }, 
+    'first frame': {
+         up: [0.026, 0.980, 0.197],
+         target:  [0.294,0.662,0.218], 
+         defaultCameraMode: 'orbit',
+         size: '?',
+         camera: [4.9, 2.2, 3], //[theta, phi, radius],
+         min_phi: 1.2
+    }, 
     // 'Hotwheel blue max degree 3': {
     //     up: [0.010, 0.620, 0.784],
     //     target:  [0.373,1.331,1.886], 
@@ -218,17 +127,17 @@ const defaultCameraParameters = {
     // },
     'Hotwheel red': {
         up: [-0.058, 0.954, 0.294],
-        target: [-0.231, 0.991, 0.844],
+        target:  [-0.231,0.991,0.844], 
         defaultCameraMode: 'orbit',
         size: '?',
         camera: [4.37, 1.98, 7], //[theta, phi, radius],
         min_phi: 1.8,
         max_phi: 2.5,
         min_radius: 3.7
-    },
+    }, 
     'Hotwheel blue': {
         up: [0.010, 0.620, 0.784],
-        target: [0.373, 1.331, 1.886],
+        target:  [0.373,1.331,1.886], 
         defaultCameraMode: 'orbit',
         size: '?',
         camera: [3.12, 2.30, 9], //[theta, phi, radius],
@@ -237,31 +146,31 @@ const defaultCameraParameters = {
     },
     'Hotwheel yellow van': {
         up: [0.073, 0.920, 0.386],
-        target: [0.056, 1.356, 1.574],
+        target:  [0.056,1.356,1.574], 
         defaultCameraMode: 'orbit',
         size: '?',
         camera: [2.76, 2.03, 5], //[theta, phi, radius],
         min_phi: 1.8,
         max_phi: 2.5,
-        min_radius: 4
+        min_radius: 4 
     },
     'Hotwheel blue - Higher detail (slower)': {
         up: [0.010, 0.620, 0.784],
-        target: [0.373, 1.331, 1.886],
+        target:  [0.373,1.331,1.886], 
         defaultCameraMode: 'orbit',
         size: '?',
         camera: [3.12, 2.30, 12], //[theta, phi, radius],
         min_phi: 1.9
-    },
+    }, 
     'Hotwheel yellow van - Higher detail (slower)': {
         up: [0.073, 0.920, 0.386],
-        target: [0.056, 1.356, 1.574],
+        target:  [0.056,1.356,1.574], 
         defaultCameraMode: 'orbit',
         size: '?',
         camera: [2.76, 2.03, 5], //[theta, phi, radius],
         min_phi: 1.8,
         max_phi: 2.5,
-        min_radius: 4
+        min_radius: 4         
     },
     // 'Hotwheel yellow van cleaned': {
     //     up: [0.073, 0.920, 0.386],
