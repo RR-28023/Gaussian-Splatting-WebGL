@@ -36,6 +36,27 @@ const settings = {
     showGizmo: true
 }
 
+var width = 8;
+function loadingBar() {
+    var elem = document.getElementById("barStatus");
+
+    var id = setInterval(frame, 10);
+    function frame() {
+        if (width >= 100) {
+            clearInterval(id);
+        } else {
+            width++;
+            elem.style.width = width + "%";
+        }
+    }
+}
+
+function unLoad() {
+    var elem = document.getElementById("barStatus");
+    elem.style.width = 0 + "%";
+}
+
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -43,12 +64,14 @@ function sleep(ms) {
 function showLoading() {
     // console.log("Show Loading")
     document.querySelector('#loading-container').style.opacity = "1"
+    loadingBar();
 }
 
 function hideLoading() {
     // console.log("Hide Loading");
     document.querySelector("#canvas").style.opacity = "1";
     document.querySelector("#loading-container").style.opacity = "0";
+    unLoad();
 }
 
 
@@ -128,7 +151,7 @@ async function loadScene(scene_name, back_name) {
       await sleep(3000);
         function loadLoop() {
             loadNextFrame(frames_data, CameraParameters.backgroundColorHEX, settings.renderSpeed);
-            setTimeout(loop, settings.renderSpeed);
+            setTimeout(loadLoop, settings.renderSpeed);
         }
         loadLoop();
     } else {
@@ -251,7 +274,6 @@ async function loadStaticScene(scene_name, background_data, backgroundColorHEX) 
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
-
 }
 
 function requestRender(...params) {
