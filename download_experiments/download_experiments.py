@@ -98,12 +98,19 @@ def download_dynamic_artifacts(frames_run, model_destination):
         ply_path = model_destination / f'{frame_name:05d}.ply'
         original_file.rename(ply_path)
 
-        # Create metadata file
-        metadata = create_metadata(is_dynamic=True)
-        metadata_path = model_destination / f'{model_destination.name}.json'
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f)
-
+    # Create metadata file
+    metadata = create_metadata(is_dynamic=True)
+    metadata_path = model_destination / f'{model_destination.name}.json'
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f)
+    
+    # Add model to list
+    with open('../models/models.js', 'r') as f:
+        models_to_load = f.read()
+    if model_destination.name not in models_to_load:
+        models_to_load = models_to_load.replace('\n};', f",\n    {model_destination.name}" + ":{}\n};")
+        with open('../models/models.js', 'w') as f:
+            f.write(models_to_load)
     shutil.rmtree('temp_dir')
 
 if __name__ == '__main__':
