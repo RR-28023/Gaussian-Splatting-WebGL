@@ -104,19 +104,71 @@
 					transform: rotate(360deg);
 				}
 			}
-			#progressBar {
-				position: relative;
-				width: 100%;
-				height: 30px;
-				background-color: #ddd;
-			}
+.cont{
+        margin-top: 10px;
+				margin-bottom: 20px;
+        height: 20px;
+        width: 100%;
+        background: rgba(0, 200, 0, .3);
+        border-radius: 50px;
+    }   
+    .cont .loadingbar{
+        height: 20px;
+        position: relative;
+        box-sizing: border-box;
+        width: 0%;
+        background: rgba(0, 200, 0, .8);
+        border-radius: 50px;
+        transition: width 1.5s linear
+    }
+    .cont .loadingbar:before{
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        border-radius: 50px;
+        width: 100%;
+        background: linear-gradient(to  right, rgba(0, 200, 0, .3), rgba(0, 100, 0, .8));
+        animation: purge 4s infinite ease-out
+    }
 
-			#barStatus {
-				position: absolute;
-				width: 8%;
-				height: 100%;
-				background-color: #25F;
-			}
+    @keyframes purge{
+        0%{
+            opacity: 0;
+            width: 0%;
+
+        }
+        50%{
+            opacity: .5
+        }
+        100%{
+            opacity: 0;
+            width: 100%;
+        }
+    }
+    .cont .loadingbar label{
+        font-size: 12px;
+        position: absolute;
+        right: -10px;
+        text-align: center;
+        top: -25px;
+        font-weight: 600;
+        transition: .3s;
+    }
+    .cont .loadingbar:after{
+        content: "";
+        position: absolute;
+        top: -10px;
+        right: 0px;
+        height: 50%;
+        width: 2px;
+        background: rgba(0, 200, 0, .8);
+    }
+    .cont:hover .loadingbar label{
+        transform: scale(1.5);
+        transition: .3s;
+    }
 		</style>
 	</head>
 	<body>
@@ -136,10 +188,12 @@
 				Loading 3D Scene...
 			</p>
 			<p id="loading-text" style="font-size: 15px; margin-top: 10px; margin-bottom: 50px;">This may take a while. Please be patient.</p>
-			<span class="loader"></span>
-			<div id="progressBar">
-				<div id="barStatus"></div>
-			</div>
+			<!-- <span class="loader"></span> -->
+			<div class="cont">
+        <div class="loadingbar">
+            <label class="counter">The scene is <span>0%</span> loaded</label>
+        </div>
+    </div>
 			<img id="controls" src="controls.jpg">
 		</div>
 	</body>

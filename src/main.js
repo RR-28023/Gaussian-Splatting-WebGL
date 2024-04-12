@@ -36,25 +36,7 @@ const settings = {
     showGizmo: true
 }
 
-var width = 8;
-function loadingBar() {
-    var elem = document.getElementById("barStatus");
 
-    var id = setInterval(frame, 10);
-    function frame() {
-        if (width >= 100) {
-            clearInterval(id);
-        } else {
-            width++;
-            elem.style.width = width + "%";
-        }
-    }
-}
-
-function unLoad() {
-    var elem = document.getElementById("barStatus");
-    elem.style.width = 0 + "%";
-}
 
 
 function sleep(ms) {
@@ -64,14 +46,58 @@ function sleep(ms) {
 function showLoading() {
     // console.log("Show Loading")
     document.querySelector('#loading-container').style.opacity = "1"
-    loadingBar();
 }
 
 function hideLoading() {
     // console.log("Hide Loading");
     document.querySelector("#canvas").style.opacity = "1";
     document.querySelector("#loading-container").style.opacity = "0";
-    unLoad();
+}
+
+window.addEventListener("load", loadProgress);
+
+const details = {
+    loadingPage: true,
+    initGui: "",
+    isDynamicScene: "",
+    loadScene: "",
+    loadComplete: ""
+  };
+
+
+
+function loadProgress() {
+  // Get DOM element
+  const target = document.querySelector(".loadingbar");
+  const counter = target.querySelector("span");
+
+  function getProgress(board) {
+    let maxLength = 100;
+    // Put them into array to get length of form
+    let lengthOfBoard = Object.values(board).length;
+
+    // Get possible mark of each field
+    let jumps = maxLength / lengthOfBoard;
+    let progress = 0;
+    for (let field in board) {
+      // If field is filled add it's mark to progress
+      if (board[field]) {
+        progress += jumps;
+      }
+    }
+    return progress;
+  }
+
+  // Utilise value calculated from loader
+  function implimentLoad() {
+    // Simulate a delay
+    setTimeout(() => {
+      let progress = Math.round(getProgress(details));
+      counter.innerText = `${progress}% `;
+      target.style.width = `${getProgress(details)}% `;
+    }, 50);
+  }
+  implimentLoad();
 }
 
 
@@ -95,7 +121,6 @@ async function main() {
 
         if (getComputedStyle(document.querySelector('#loading-container')).opacity != 0) {
             // document.querySelector('#loading-container').style.opacity = 0
-            hideLoading()
             cam.disableMovement = false
         }
 
@@ -123,12 +148,14 @@ async function main() {
 
     // Setup GUI
     initGUI()
+    details.initGui = true;
 
     // Setup gizmo renderer
     await gizmoRenderer.init()
 
     // Load scene
     await loadScene(settings.scene, settings.back)
+    details.loadComplete = true;
 
 }
 
@@ -141,26 +168,30 @@ async function loadScene(scene_name, back_name) {
     cam.disableMovement = true
     // if (scene_name.includes('dynamic')) {
     if (defaultCameraParameters.isDynamic) {
-      console.log("Loading Dynamic Scene");
-      // Load the background PLY data
-      const frames_data = await loadFramesPly(scene_name);
-      // Load the first frame
-      window.frame_idx = 0;
-      loadNextFrame(frames_data, CameraParameters.backgroundColorHEX);
-      // Wait 3 seconds for the first frame to be loaded before starting the interval
-      await sleep(3000);
-        function loadLoop() {
-            loadNextFrame(frames_data, CameraParameters.backgroundColorHEX, settings.renderSpeed);
-            setTimeout(loadLoop, settings.renderSpeed);
-        }
-        loadLoop();
+        details.isDynamicScene = true;
+        console.log("Loading Dynamic Scene");
+        // Load the background PLY data
+        const frames_data = await loadFramesPly(scene_name);
+        // Load the first frame
+        window.frame_idx = 0;
+            loadNextFrame(frames_data, CameraParameters.backgroundColorHEX);
+            hideLoading();
+        // Wait 3 seconds for the first frame to be loaded before starting the interval
+        await sleep(3000);
+            function loadLoop() {
+                loadNextFrame(frames_data, CameraParameters.backgroundColorHEX, settings.renderSpeed);
+                setTimeout(loadLoop, settings.renderSpeed);
+            }
+            loadLoop();
     } else {
         // Load the a static scene
         console.log("Loading Static Scene");
+        details.isDynamicScene = true;
         await loadStaticScene(scene_name, CameraParameters.backgroundColorHEX);
     }
     cam.disableMovement = false
     document.body.style.backgroundColor = defaultCameraParameters.backgroundColorHEX;
+    details.loadScene = true;
 
 }
 
@@ -182,7 +213,7 @@ async function loadNextFrame(frames_data, backgroundColorHEX) {
     // console.log(`Sending frame ${window.frame_idx} to worker`)
     await sendGaussianDataToWorker(frames_data[window.frame_idx])
     // Append the back data to the data elements if it exists
-    cam.update(is_dynamic=true)
+    cam.update(is_dynamic = true)
     document.getElementById('frameNumber').innerText = `Frame: ${window.frame_idx}`;
     document.body.style.backgroundColor = backgroundColorHEX;
     window.frame_idx += 1
@@ -207,13 +238,15 @@ async function loadFramesPly(frames_folder) {
         if (response.ok){
             contentLength.push(parseInt(response.headers.get('content-length')))
             reader.push(response.body.getReader())
-            i++
+            // console.log(i, details);
+            details["frame"+i] = "";
+            i++;
         }
         else {
             break
         }
     }
-    let n_frames = reader.length    
+    let n_frames = reader.length
     for (let i = 0; i < reader.length; i++) {
         // Download .ply file and monitor the progress
         // let start = performance.now()
@@ -222,7 +255,9 @@ async function loadFramesPly(frames_folder) {
         frame_ply_data = await loadPly(content.buffer)
         data.push(frame_ply_data)
         // console.log(`Frame ${i}/${n_frames} loaded in ${((performance.now() - start) / 1000).toFixed(3)}s`)
-        console.log(`Frame ${i}/${n_frames} loaded`);
+        // console.log(`Frame ${i}/${n_frames} loaded`);
+        console.log(`Frame ${i}/${n_frames} loaded`, details);
+        details["frame"+i] = true;
         // const progress = ((i + 1) /n_frames) * 100
         // document.querySelector('#loading-bar').style.width = progress + '%'
         // document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
@@ -274,6 +309,7 @@ async function loadStaticScene(scene_name, background_data, backgroundColorHEX) 
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
+    hideLoading();
 }
 
 function requestRender(...params) {
