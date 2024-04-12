@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>WebGL Gaussian Splat Renderer</title>
+		<title>Trinity Viewer Gaussiansplats</title>
+		<link rel="icon"
+      type="image/png"
+      href="/favicon-32x32.png" />
 
 		<!-- Libraries -->
 		<script src="https://cdn.jsdelivr.net/npm/gl-matrix@3.4.3/gl-matrix-min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18"></script>
 
 		<!-- Scripts -->
+		<script src="models/models.js"></script>
 		<script src="src/utils.js"></script>
 		<script src="src/gui.js"></script>
 		<script src="src/gizmo.js"></script>
 		<script src="src/camera.js"></script>
 		<script src="src/loader.js"></script>
 		<script src="src/main.js"></script>
-		<script src="src/scenes-config.js"></script>
 
 		<!-- Style -->
 		<style>
@@ -50,7 +53,8 @@
 				height: 100%;
 				padding: 0 80px;
 				box-sizing: border-box;
-				color: white;
+				color: rgb(255, 255, 255);
+				font-size: 22px;
 				transition: all 0.25s ease-in-out;
 				pointer-events: none;
 			}
@@ -59,21 +63,112 @@
 				margin: 0 auto;
 			}
 
-			#loading-bar {
-				width: 0%;
-				height: 15px;
-				background-color: white;
-				margin: 40px 0;
-			}
-
-			#controls { 
-				width: 15%; 
-				margin: 0 auto; 
+			#controls {
+				width: 15%;
+				margin: 0 auto;
 			}
 
 			.ctrl-key {
 				color: orange;
 			}
+			.loader {
+				width: 52px;
+				height: 52px;
+				border-radius: 50%;
+				margin: 0 auto;
+				display: inline-block;
+				border-top: 4px solid #FFF;
+				border-right: 4px solid transparent;
+				box-sizing: border-box;
+				animation: rotation 1s linear infinite;
+				margin-bottom: 50px;
+			}
+			.loader::after {
+				content: '';
+				box-sizing: border-box;
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 48px;
+				height: 48px;
+				border-radius: 50%;
+				border-left: 4px solid #160a60;
+				border-bottom: 4px solid transparent;
+				animation: rotation 0.5s linear infinite reverse;
+			}
+			@keyframes rotation {
+				0% {
+					transform: rotate(0deg);
+				}
+				100% {
+					transform: rotate(360deg);
+				}
+			}
+.cont{
+        margin-top: 10px;
+				margin-bottom: 20px;
+        height: 20px;
+        width: 100%;
+        background: rgba(0, 200, 0, .3);
+        border-radius: 50px;
+    }   
+    .cont .loadingbar{
+        height: 20px;
+        position: relative;
+        box-sizing: border-box;
+        width: 0%;
+        background: rgba(0, 200, 0, .8);
+        border-radius: 50px;
+        transition: width 1.5s linear
+    }
+    .cont .loadingbar:before{
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        border-radius: 50px;
+        width: 100%;
+        background: linear-gradient(to  right, rgba(0, 200, 0, .3), rgba(0, 100, 0, .8));
+        animation: purge 4s infinite ease-out
+    }
+
+    @keyframes purge{
+        0%{
+            opacity: 0;
+            width: 0%;
+
+        }
+        50%{
+            opacity: .5
+        }
+        100%{
+            opacity: 0;
+            width: 100%;
+        }
+    }
+    .cont .loadingbar label{
+        font-size: 12px;
+        position: absolute;
+        right: -10px;
+        text-align: center;
+        top: -25px;
+        font-weight: 600;
+        transition: .3s;
+    }
+    .cont .loadingbar:after{
+        content: "";
+        position: absolute;
+        top: -10px;
+        right: 0px;
+        height: 50%;
+        width: 2px;
+        background: rgba(0, 200, 0, .8);
+    }
+    .cont:hover .loadingbar label{
+        transform: scale(1.5);
+        transition: .3s;
+    }
 		</style>
 	</head>
 	<body>
@@ -88,11 +183,17 @@
 
 
 		<!-- Loading bar -->
-		<div id="loading-container">
+		<div id="loading-container" style="opacity: 1;">
 			<p id="loading-text">
-				Downloading 3D scene...
+				Loading 3D Scene...
 			</p>
-			<div id="loading-bar"></div>
+			<p id="loading-text" style="font-size: 15px; margin-top: 10px; margin-bottom: 50px;">This may take a while. Please be patient.</p>
+			<!-- <span class="loader"></span> -->
+			<div class="cont">
+        <div class="loadingbar">
+            <label class="counter">The scene is <span>0%</span> loaded</label>
+        </div>
+    </div>
 			<img id="controls" src="controls.jpg">
 		</div>
 	</body>

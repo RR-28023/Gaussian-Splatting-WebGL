@@ -26,6 +26,7 @@ const settings = {
     debugDepth: false,
     freeFly: false,
     sortTime: 'NaN',
+    renderSpeed: 500,
     // shDegree: 2,
     // maxShDegree: 3,
 
@@ -35,9 +36,70 @@ const settings = {
     showGizmo: true
 }
 
+
+
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+function showLoading() {
+    // console.log("Show Loading")
+    document.querySelector('#loading-container').style.opacity = "1"
+}
+
+function hideLoading() {
+    // console.log("Hide Loading");
+    document.querySelector("#canvas").style.opacity = "1";
+    document.querySelector("#loading-container").style.opacity = "0";
+}
+
+window.addEventListener("load", loadProgress);
+
+const details = {
+    loadingPage: true,
+    initGui: "",
+    isDynamicScene: "",
+    loadScene: "",
+    loadComplete: ""
+  };
+
+
+
+function loadProgress() {
+  // Get DOM element
+  const target = document.querySelector(".loadingbar");
+  const counter = target.querySelector("span");
+
+  function getProgress(board) {
+    let maxLength = 100;
+    // Put them into array to get length of form
+    let lengthOfBoard = Object.values(board).length;
+
+    // Get possible mark of each field
+    let jumps = maxLength / lengthOfBoard;
+    let progress = 0;
+    for (let field in board) {
+      // If field is filled add it's mark to progress
+      if (board[field]) {
+        progress += jumps;
+      }
+    }
+    return progress;
+  }
+
+  // Utilise value calculated from loader
+  function implimentLoad() {
+    // Simulate a delay
+    setTimeout(() => {
+      let progress = Math.round(getProgress(details));
+      counter.innerText = `${progress}% `;
+      target.style.width = `${getProgress(details)}% `;
+    }, 50);
+  }
+  implimentLoad();
+}
+
 
 async function main() {
     // Setup webgl context and buffers
@@ -58,7 +120,7 @@ async function main() {
         const { data, sortTime } = e.data
 
         if (getComputedStyle(document.querySelector('#loading-container')).opacity != 0) {
-            document.querySelector('#loading-container').style.opacity = 0
+            // document.querySelector('#loading-container').style.opacity = 0
             cam.disableMovement = false
         }
 
@@ -86,73 +148,74 @@ async function main() {
 
     // Setup GUI
     initGUI()
+    details.initGui = true;
 
     // Setup gizmo renderer
     await gizmoRenderer.init()
 
     // Load scene
     await loadScene(settings.scene, settings.back)
+    details.loadComplete = true;
 
 }
 
 async function loadScene(scene_name, back_name) {
     // Instantiate the camera
-    cam = new Camera(defaultCameraParameters[scene_name])
+    const CameraParameters = await fetch(`models/${scene_name}/${scene_name}.json`)
+    const defaultCameraParameters = await CameraParameters.json()
+
+    cam = new Camera(defaultCameraParameters)
     cam.disableMovement = true
-    var back_data = null
-    if (back_name != 'None') {
-        var back_data = await loadBackgroundPly(back_name)
-    }
-    if (scene_name.includes('dynamic')) {
+    // if (scene_name.includes('dynamic')) {
+    if (defaultCameraParameters.isDynamic) {
+        details.isDynamicScene = true;
+        console.log("Loading Dynamic Scene");
         // Load the background PLY data
-        const frames_data = await loadFramesPly(scene_name)    
+        const frames_data = await loadFramesPly(scene_name);
         // Load the first frame
-        window.frame_idx = 0
-        loadNextFrame(frames_data, back_data)     
+        window.frame_idx = 0;
+            loadNextFrame(frames_data, CameraParameters.backgroundColorHEX);
+            hideLoading();
         // Wait 3 seconds for the first frame to be loaded before starting the interval
-        await sleep(3000)
-        stopInterval = setInterval(() => loadNextFrame(frames_data, back_data), 500);
-        //await load_next_frame(frames_data, back_data)
-    }
-    else {
+        await sleep(3000);
+            function loadLoop() {
+                loadNextFrame(frames_data, CameraParameters.backgroundColorHEX, settings.renderSpeed);
+                setTimeout(loadLoop, settings.renderSpeed);
+            }
+            loadLoop();
+    } else {
         // Load the a static scene
-        await loadStaticScene(scene_name, back_data)
+        console.log("Loading Static Scene");
+        details.isDynamicScene = true;
+        await loadStaticScene(scene_name, CameraParameters.backgroundColorHEX);
     }
     cam.disableMovement = false
+    document.body.style.backgroundColor = defaultCameraParameters.backgroundColorHEX;
+    details.loadScene = true;
 
 }
 
-async function sendGaussianDataToWorker(scene_data, background_data) {
-    
+
+async function sendGaussianDataToWorker(scene_data) {
+
     var data_to_send = scene_data
     gaussianCount = scene_data.positions.length / 3
-    if (background_data) {
-        start = performance.now()
-        gaussianCount += background_data.positions.length / 3
-        
-        data_to_send.positions = data_to_send.positions.concat(background_data.positions)
-        data_to_send.colors = data_to_send.colors.concat(background_data.colors)
-        data_to_send.opacities = data_to_send.opacities.concat(background_data.opacities)
-        data_to_send.cov3Ds = data_to_send.cov3Ds.concat(background_data.cov3Ds)        
-        const appendTime = `${((performance.now() - start)/1000).toFixed(3)}s`
-        console.log(`[Frame loader] Appended background data in ${appendTime}`)
-    }
     settings.maxGaussians = gaussianCount
     worker.postMessage({gaussians: { ...data_to_send, count: gaussianCount }})
-    
-} 
+
+}
 
 
-async function loadNextFrame(frames_data, background_data) {
-    
+async function loadNextFrame(frames_data, backgroundColorHEX) {
+
     // Send gaussian data to the worker
     gaussianCount = frames_data[window.frame_idx].positions.length / 3
-    console.log(`Sending frame ${window.frame_idx} to worker`)
-    await sendGaussianDataToWorker(frames_data[window.frame_idx], background_data)
+    // console.log(`Sending frame ${window.frame_idx} to worker`)
+    await sendGaussianDataToWorker(frames_data[window.frame_idx])
     // Append the back data to the data elements if it exists
-    cam.update(is_dynamic=true)
+    cam.update(is_dynamic = true)
     document.getElementById('frameNumber').innerText = `Frame: ${window.frame_idx}`;
-    document.body.style.backgroundColor = settings.bgColor    
+    document.body.style.backgroundColor = backgroundColorHEX;
     window.frame_idx += 1
     if (window.frame_idx >= frames_data.length) window.frame_idx = 0
 
@@ -164,77 +227,75 @@ async function loadNextFrame(frames_data, background_data) {
 }
 
 async function loadFramesPly(frames_folder) {
+    console.log("Loading Frames")
+    showLoading();
     data = []
     let i=1
     let reader = []
     let contentLength = []
     while (true){
-        response = await fetch(`models/${frames_folder}/frame_${i}.ply`)
+        response = await fetch(`models/${frames_folder}/${String(i).padStart(5, '0')}.ply`)
         if (response.ok){
             contentLength.push(parseInt(response.headers.get('content-length')))
             reader.push(response.body.getReader())
-            i++
+            // console.log(i, details);
+            details["frame"+i] = "";
+            i++;
         }
         else {
             break
         }
     }
-    const n_frames = i
-    
+    let n_frames = reader.length
     for (let i = 0; i < reader.length; i++) {
         // Download .ply file and monitor the progress
+        // let start = performance.now()
         const content = await downloadPly(reader[i], contentLength[i])
         // Load and pre-process gaussian data from .ply file
         frame_ply_data = await loadPly(content.buffer)
-        delete frame_ply_data.scales
         data.push(frame_ply_data)
-        const progress = ((i + 1) /n_frames) * 100
-        document.querySelector('#loading-bar').style.width = progress + '%'
-        document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
+        // console.log(`Frame ${i}/${n_frames} loaded in ${((performance.now() - start) / 1000).toFixed(3)}s`)
+        // console.log(`Frame ${i}/${n_frames} loaded`);
+        console.log(`Frame ${i}/${n_frames} loaded`, details);
+        details["frame"+i] = true;
+        // const progress = ((i + 1) /n_frames) * 100
+        // document.querySelector('#loading-bar').style.width = progress + '%'
+        // document.querySelector('#loading-text').textContent = `Downloading 3D frames (${(i + 1)}/${n_frames}) ... ${progress.toFixed(2)}%`
     }
     return data
 }
 
-async function loadBackgroundPly(back_name) {
-    response = await fetch(`models/${back_name}.ply`)
-    contentLength = parseInt(response.headers.get('content-length'))
-    reader = response.body.getReader()
-    background_data = []
-    const content = await downloadPly(reader, contentLength)    
-    back_data = await loadPly(content.buffer)
-    // getGravityCenter(back_data)        
-    delete back_data.scales
-    return back_data
-}
+
 
 // Load a .ply scene specified as a name (URL fetch) or local file
-async function loadStaticScene(scene_name, background_data) {
+async function loadStaticScene(scene_name, background_data, backgroundColorHEX) {
     // gl.clearColor(0, 0, 0, 0)
     // gl.clear(gl.COLOR_BUFFER_BIT)
-    document.querySelector('#loading-container').style.opacity = 1
-    let response = await fetch(`models/${scene_name}.ply`)
-    
+    // document.querySelector('#loading-container').style.opacity = 1
+    showLoading()
+    let response = await fetch(`models/${scene_name}/${scene_name}.ply`);
+
     if (response.ok) {
         contentLength = parseInt(response.headers.get('content-length'))
         reader = response.body.getReader()
     }
-    
+
     else {
         throw new Error('Scene .ply not found')
-    }    
+    }
     // Download .ply file and monitor the progress
     const content = await downloadPly(reader, contentLength)
     // Load and pre-process gaussian data from .ply file
     data = await loadPly(content.buffer)
-    
+
     // Print gravity center
     getGravityCenter(data)
-    delete data.scales
-    
+    // delete data.scales
+
     // Send gaussian data to the worker
-    console.log(`Sending static gaussian data to worker`)
-    await sendGaussianDataToWorker(data, background_data)
-    document.body.style.backgroundColor = settings.bgColor
+    // console.log(`Sending static gaussian data to worker`)
+    await sendGaussianDataToWorker(data)
+    document.body.style.backgroundColor = backgroundColorHEX;
     cam.update(is_dynamic=false)
 
 
@@ -248,7 +309,7 @@ async function loadStaticScene(scene_name, background_data) {
     settings.maxGaussians = gaussianCount
     maxGaussianController.max(gaussianCount)
     maxGaussianController.updateDisplay()
-
+    hideLoading();
 }
 
 function requestRender(...params) {
@@ -338,7 +399,7 @@ function getGravityCenter(data) {
         sumScale += avg_scale
     }
     let mean_pos = [sumX / sumScale, sumY / sumScale, sumZ / sumScale]
-    console.log(`Gravity center at [${mean_pos[0].toFixed(3)},${mean_pos[1].toFixed(3)},${mean_pos[2].toFixed(3)}]`)
+    // console.log(`Gravity center at [${mean_pos[0].toFixed(3)},${mean_pos[1].toFixed(3)},${mean_pos[2].toFixed(3)}]`)
 }
 
 
