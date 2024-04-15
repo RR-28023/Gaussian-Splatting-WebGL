@@ -234,7 +234,7 @@ async function loadFramesPly(frames_folder) {
     let reader = []
     let contentLength = []
     while (true){
-        response = await fetch(`models/${frames_folder}/${String(i).padStart(5, '0')}.ply`)
+        response = await fetch(`models/${frames_folder}/frame_${String(i).padStart(4, '0')}.ply`)
         if (response.ok){
             contentLength.push(parseInt(response.headers.get('content-length')))
             reader.push(response.body.getReader())

@@ -11,12 +11,17 @@ os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'https://minio.kdl-dell.konstellation.io'
 
 mlflow.set_tracking_uri(MLFLOW_URL)
 
-def experiment_exists(experiment_id):
-    return mlflow.get_experiment(experiment_id)
 
-def create_metadata(is_dynamic):
+def create_metadata_json(is_dynamic:bool)->dict:
+    """create basic information of model
+    center point, up and so on are default values and need to be updated
+
+    Args:
+        is_dynamic (bool): Whether the model is dynamic or not
+
+    """
     data = {
-        "isDynamic": "true" if is_dynamic else "false",
+        "isDynamic": True if is_dynamic else False,
         "up": [
             0.0,
             0.0,
@@ -41,91 +46,117 @@ def create_metadata(is_dynamic):
     }
     return data
 
-def last_downloaded_frame(model_destination: Path):
-    "check existing directory to avoid re-downloading frames"
-    starting_frame = 0
-    for file in model_destination.iterdir():
-        if file.suffix == '.ply':
-            frame = int(file.stem)
-            starting_frame = max(starting_frame, frame)
+def create_meta_data_files(model_directory:Path, is_dynamic:bool):
+    """Generate the necessary metadata files for the model
 
-    return starting_frame +1
+    Args:
+        model_directory (Path): directory where the model is stored
+        is_dynamic (bool): if the model is dynamic or static
+    """
+    # Create metadata file
+    metadata = create_metadata_json(is_dynamic)
+    metadata_path = model_directory / f'{model_directory.name}.json'
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f)
+    
+    # Add model to list if it does not exist already
+    with open('../models/models.js', 'r') as f:
+        models_to_load = f.read()
+    if model_directory.name not in models_to_load:
+        models_to_load = models_to_load.replace('\n};', f",\n    {model_directory.name}" + ":{}\n};")
+        with open('../models/models.js', 'w') as f:
+            f.write(models_to_load)
 
-def get_runs(parent_id, experiment_id) -> pd.DataFrame:
-    experiment_exists(experiment_id)
+def get_runs(parent_id:str, experiment_id:str) -> pd.DataFrame:
+    """download runs from mlflow and stored them in a pandas dataframe
+    if run has already been download (ie model is already in the model directory) it will be skipped
+
+    Args:
+        parent_id (str): id of parent run (or id of the run to download if static)
+        experiment_id (str): id of experiment
+
+    Returns:
+        pd.DataFrame: dataframe with the list of runs
+    """
+    assert mlflow.get_experiment(experiment_id), f'Experiment {experiment_id} does not exist'
     # Load experiment runs
     runs = mlflow.search_runs(experiment_ids=[experiment_id])
-    runs = runs[(runs['run_id'].str.contains(parent_id)) | (runs['tags.mlflow.parentRunId'] == parent_id)]
- 
+    try:
+        runs = runs[(runs['run_id'].str.contains(parent_id)) | (runs['tags.mlflow.parentRunId'] == parent_id)]
+        parent_name = runs[(runs['run_id'].str.contains(parent_id))].iloc[0]['tags.mlflow.runName']
+        runs.loc[(runs['run_id'].str.contains(parent_id)), 'tags.mlflow.runName'] = 'frame_0000' # modify parent name to be a frame
+        print('Parent run found', runs[(runs['run_id'].str.contains(parent_id))].iloc[0])
+    except KeyError:
+        print('No parent run id found, using parent id as run id')
+        runs = runs[(runs['run_id'].str.contains(parent_id))]
+        parent_name = runs[(runs['run_id'].str.contains(parent_id))].iloc[0]['tags.mlflow.runName']
+
     # Check if there are any runs
     assert not runs.empty, f"No runs found for parent run {parent_id}"
 
-    return runs
+    # Drop runs already downloaded
+    model_destination = Path('../models') / parent_name.replace('-', '_')
+    if model_destination.exists():
+        runs = runs[~runs['tags.mlflow.runName'].isin([file.stem for file in model_destination.iterdir() if file.suffix == '.ply'])]
+        print(len(runs), 'runs to download')
+    return runs, model_destination
 
-def download_dynamic_artifacts(frames_run, model_destination):
 
-    # Create the model destination folder
-    model_destination = Path('../models') / model_destination 
-    print(f"Downloading frames to {model_destination}")
-    model_destination.mkdir(exist_ok=True)
+def move_artifacts_to_destination(temp_dir:Path, model_destination:Path, file_name:str):
+    """Move artifacts of the last iteration from temp_dir to the model destination
 
-    # If the folder already exists, we need to check the last frame downloaded
-    starting_frame = last_downloaded_frame(model_destination)
-    print(f"Starting from frame {starting_frame}")
+    Args:
+        temp_dir (Path): current location of the artifacts
+        model_destination (Path): final destination of the artifacts
+        file_name (str): name to give to the final artifact
+    """
+    max_iteration_directory = max(temp_dir.iterdir())
+    original_file_name = [file for file in max_iteration_directory.iterdir() if '.ply' in file.name][0]
+    ply_path = model_destination / file_name
+    original_file_name.rename(ply_path)
 
-    # Sort the runs by frame number and discard the ones already downloaded
-    frames_run = frames_run.sort_values(by=['tags.mlflow.runName'])
-    frames_run = frames_run.iloc[starting_frame:]
+def donwload_artifacts(runs:pd.DataFrame, model_destination:Path, artifact_path:str):
+    """iterate through the runs to download artifacts
+    then select the artifact of last iteration per run and move it to the model destination
 
-    for _, run in frames_run.iterrows():
-        print(run)
+    Args:
+        runs (pd.DataFrame): list of runs to download
+        model_destination (Path): final destination of the .ply files
+        artifact_path (str): within mlflow artifact path to download (eg 'point_cloud' or 'net')
+    """
+    for _, run in runs.iterrows():
         run_id = run['run_id']
-        
-        # Download the point cloud
+        run_name = run['tags.mlflow.runName']
+        print(f"Downloading run {run_id}: {run_name}")
+        # Download the artifacts
         try:
-            temp_dir = mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path='point_cloud', dst_path='temp_dir')
+            temp_dir = mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path=artifact_path, dst_path='temp_dir')
         except Exception as e:
             print(f"Failed to download run {run_id}")
             print(e)
             continue
 
         # Find the last training iteration and save as final point cloud
-        iteration = [int(iteration_folder.stem.split('_')[-1]) for iteration_folder in Path(temp_dir).iterdir()]
-        max_iteration = max(iteration)
-        print(f"Downloaded run {run_id} with {max_iteration} iterations")
-        original_file = Path(temp_dir) / f'iteration_{max_iteration}' / 'point_cloud.ply'
-        frame_name = int(run['tags.mlflow.runName'].split('_')[-1])
-        ply_path = model_destination / f'{frame_name:05d}.ply'
-        original_file.rename(ply_path)
-
-    # Create metadata file
-    metadata = create_metadata(is_dynamic=True)
-    metadata_path = model_destination / f'{model_destination.name}.json'
-    with open(metadata_path, 'w') as f:
-        json.dump(metadata, f)
-    
-    # Add model to list
-    with open('../models/models.js', 'r') as f:
-        models_to_load = f.read()
-    if model_destination.name not in models_to_load:
-        models_to_load = models_to_load.replace('\n};', f",\n    {model_destination.name}" + ":{}\n};")
-        with open('../models/models.js', 'w') as f:
-            f.write(models_to_load)
-    shutil.rmtree('temp_dir')
+        move_artifacts_to_destination(Path(temp_dir), model_destination, run_name + '.ply')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download experiments from MLFlow')
     parser.add_argument('--experiment_id', type=str, help='Experiment id')
     parser.add_argument('--parent_id', type=str, help='Parent run id')
-    parser.add_argument('--model_destination', type=str, help='Destination folder for the models', default='new_model')
     args = parser.parse_args()
     parent_id = args.parent_id
     experiment_id = args.experiment_id
-    model_destination = args.model_destination
 
-    runs = get_runs(parent_id, experiment_id)
+    runs, model_destination = get_runs(parent_id, experiment_id)
+    model_destination.mkdir(exist_ok=True)
+
     if len(runs) > 1:
-        download_dynamic_artifacts(runs, model_destination)
+        donwload_artifacts(runs, model_destination, 'point_cloud')
+        create_meta_data_files(model_destination, is_dynamic=True)
     else:
-        # TODO: download_static_artifacts(runs, model_destination)
-        pass
+        donwload_artifacts(runs, model_destination, 'net')
+        create_meta_data_files(model_destination, is_dynamic=False)
+
+    if Path('temp_dir').exists():
+        shutil.rmtree('temp_dir')
+    print('Done')
