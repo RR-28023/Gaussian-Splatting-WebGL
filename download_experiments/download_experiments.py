@@ -5,7 +5,7 @@ import argparse
 import shutil
 import pandas as pd
 import json
-
+import re
 MLFLOW_URL = 'https://trn001-konstellation-mlflow.kdl-dell.konstellation.io'
 os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'https://minio.kdl-dell.konstellation.io'
 
@@ -78,7 +78,14 @@ def get_runs(parent_id:str, experiment_id:str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: dataframe with the list of runs
     """
-    assert mlflow.get_experiment(experiment_id), f'Experiment {experiment_id} does not exist'
+    try:
+        mlflow.get_experiment(experiment_id)
+    except mlflow.exceptions.RestException as e:
+        print(e)
+        print(f'Verify experiment and run id. In th url of the run you should be able to find:')
+        print('\t/experiments/EXPERIMENT_ID/runs/PARENT_ID')
+        exit()
+
     # Load experiment runs
     runs = mlflow.search_runs(experiment_ids=[experiment_id])
     try:
@@ -110,8 +117,10 @@ def move_artifacts_to_destination(temp_dir:Path, model_destination:Path, file_na
         model_destination (Path): final destination of the artifacts
         file_name (str): name to give to the final artifact
     """
-    max_iteration_directory = max(temp_dir.iterdir())
+    directories = [(int(re.findall(r'\d+',iteration.name)[-1]), iteration) for iteration in temp_dir.iterdir()]
+    max_iteration, max_iteration_directory = sorted(directories)[-1]
     original_file_name = [file for file in max_iteration_directory.iterdir() if '.ply' in file.name][0]
+    print(f'preserving iteration {max_iteration}')
     ply_path = model_destination / file_name
     original_file_name.rename(ply_path)
 
